@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:id="@+id/widget_location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="Istanbul"
+            android:textColor="#F2FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:text="Best match · 2m ago"
+            android:textColor="#8A748198"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h0" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i0" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t0" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p0" style="@style/WidgetProb" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h1" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i1" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t1" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p1" style="@style/WidgetProb" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h2" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i2" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t2" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p2" style="@style/WidgetProb" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h3" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i3" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t3" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p3" style="@style/WidgetProb" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h4" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i4" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t4" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p4" style="@style/WidgetProb" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/h5" style="@style/WidgetHour" />
+            <ImageView android:id="@+id/i5" style="@style/WidgetIcon" />
+            <TextView android:id="@+id/t5" style="@style/WidgetTemp" />
+            <TextView android:id="@+id/p5" style="@style/WidgetProb" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
