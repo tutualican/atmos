@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import com.alican.atmos.core.AnimationQuality
 import com.alican.atmos.core.WeatherKind
 import com.alican.atmos.ui.theme.Atmos
+import com.alican.atmos.ui.theme.atmosphereFor
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -40,6 +41,7 @@ import kotlin.random.Random
 fun WeatherScene(
     kind: WeatherKind,
     isDay: Boolean,
+    hourOfDay: Int,
     precipitationMm: Double,
     precipitationProbability: Int?,
     windMs: Double,
@@ -52,8 +54,8 @@ fun WeatherScene(
     var frame by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
-    LaunchedEffect(kind, isDay, quality, reduceMotion, precipitationMm) {
-        engine.configure(kind, isDay, precipitationMm, precipitationProbability, windMs, quality, reduceMotion)
+    LaunchedEffect(kind, isDay, hourOfDay, quality, reduceMotion, precipitationMm) {
+        engine.configure(kind, isDay, hourOfDay, precipitationMm, precipitationProbability, windMs, quality, reduceMotion)
     }
 
     LaunchedEffect(kind, isDay, reduceMotion) {
@@ -130,6 +132,7 @@ private class SceneEngine {
 
     private var kind = WeatherKind.OVERCAST
     private var isDay = true
+    private var hourOfDay = 12
     private var intensity = 0.4f
     private var wind = 0f
     private var motionScale = 1f
@@ -160,6 +163,7 @@ private class SceneEngine {
     fun configure(
         kind: WeatherKind,
         isDay: Boolean,
+        hourOfDay: Int,
         precipMm: Double,
         precipProbability: Int?,
         windMs: Double,
@@ -169,6 +173,7 @@ private class SceneEngine {
         val changed = this.kind != kind || this.isDay != isDay
         this.kind = kind
         this.isDay = isDay
+        this.hourOfDay = hourOfDay
         this.wind = (windMs / 12.0).toFloat().coerceIn(0f, 2.2f)
         this.precipitationProbability = precipProbability ?: 0
         this.frozen = reduceMotion
@@ -393,41 +398,23 @@ private class SceneEngine {
     }
 
     private fun drawSky(scope: DrawScope, w: Float, h: Float) {
-        val top: Color
-        val bottom: Color
-        when (kind) {
-            WeatherKind.THUNDER, WeatherKind.HAIL -> {
-                top = if (isDay) Color(0xFF2A3448) else Color(0xFF0D131F)
-                bottom = if (isDay) Color(0xFF10161F) else Color(0xFF06090F)
-            }
-            WeatherKind.HEAVY_RAIN, WeatherKind.RAIN, WeatherKind.DRIZZLE,
-            WeatherKind.FREEZING_RAIN, WeatherKind.SLEET -> {
-                top = if (isDay) Color(0xFF2C3B52) else Color(0xFF121B2A)
-                bottom = if (isDay) Color(0xFF121A26) else Color(0xFF090D14)
-            }
-            WeatherKind.SNOW -> {
-                top = if (isDay) Color(0xFF3C4B63) else Color(0xFF17202F)
-                bottom = if (isDay) Color(0xFF19222F) else Color(0xFF0B111A)
-            }
-            WeatherKind.FOG -> {
-                top = if (isDay) Color(0xFF3A4557) else Color(0xFF151D29)
-                bottom = if (isDay) Color(0xFF1A222E) else Color(0xFF0C1119)
-            }
-            WeatherKind.OVERCAST -> {
-                top = if (isDay) Color(0xFF33415A) else Color(0xFF151E2C)
-                bottom = if (isDay) Color(0xFF141B27) else Color(0xFF0A0E15)
-            }
-            else -> {
-                top = if (isDay) Color(0xFF243451) else Color(0xFF111A2B)
-                bottom = Atmos.Midnight
-            }
-        }
+        val palette = atmosphereFor(kind, isDay, hourOfDay)
         scope.drawRect(
             Brush.verticalGradient(
-                0f to top,
-                0.45f to bottom.copy(alpha = 1f),
-                1f to Color(0xFF090D14)
+                0f to palette.skyTop,
+                0.46f to palette.skyMid,
+                1f to palette.skyBottom
             )
+        )
+        // Soft horizon glow, coloured by the same accent as the interface.
+        scope.drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(palette.warm.copy(alpha = if (isDay) 0.13f else 0.05f), Color.Transparent),
+                center = Offset(w * 0.5f, h * 0.62f),
+                radius = w * 0.72f
+            ),
+            radius = w * 0.72f,
+            center = Offset(w * 0.5f, h * 0.62f)
         )
     }
 
@@ -563,9 +550,10 @@ private class SceneEngine {
         }
         val shadowTint = if (kind.isStorm) Color(0xFF141A26) else Color(0xFF161E2B)
         val midTint = if (kind.isStorm) Color(0xFF2D3648) else Color(0xFF394355)
+        val palette = atmosphereFor(kind, isDay, hourOfDay)
         val rimTint = when {
-            kind.isStorm -> Color(0xFF6B7A95)
-            !isDay -> Color(0xFF7F91AC)
+            kind.isStorm -> palette.accent
+            !isDay -> palette.accent
             else -> Color(0xFFC6D2E2)
         }
 
@@ -623,7 +611,7 @@ private class SceneEngine {
             val rimAlpha = if (isDay) 0.20f else 0.10f
             scope.drawOval(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color.Transparent, Atmos.Gold.copy(alpha = rimAlpha), Color.Transparent),
+                    colors = listOf(Color.Transparent, palette.warm.copy(alpha = rimAlpha), Color.Transparent),
                     center = Offset(clusterCenterX + w * 0.16f, clusterCenterY - h * 0.06f),
                     radius = w * 0.22f
                 ),

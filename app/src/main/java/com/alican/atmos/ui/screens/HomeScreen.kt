@@ -49,7 +49,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alican.atmos.core.DayPoint
+import com.alican.atmos.core.Activities
+import com.alican.atmos.core.ActivitySuitability
 import com.alican.atmos.core.AtmosSettings
+import com.alican.atmos.core.OutdoorActivity
 import com.alican.atmos.data.OfficialAlert
 import com.alican.atmos.notify.Nowcast
 import com.alican.atmos.core.WeatherData
@@ -63,9 +66,14 @@ import com.alican.atmos.ui.components.AtmosIcons
 import com.alican.atmos.ui.components.Hairline
 import com.alican.atmos.ui.components.IconButtonSoft
 import com.alican.atmos.ui.components.Pill
+import com.alican.atmos.ui.components.PrecipBarChart
+import com.alican.atmos.ui.components.ScoreBar
 import com.alican.atmos.ui.components.SectionHeader
+import com.alican.atmos.ui.components.SegmentedBar
 import com.alican.atmos.ui.components.Sparkline
 import com.alican.atmos.ui.components.StatCard
+import com.alican.atmos.ui.components.SunArc
+import com.alican.atmos.ui.components.TemperatureCurve
 import com.alican.atmos.ui.components.ValueUnit
 import com.alican.atmos.ui.scene.WeatherScene
 import com.alican.atmos.ui.theme.Atmos
@@ -77,6 +85,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen(
     state: AtmosUiState,
+    hourOfDay: Int,
     onOpenLocation: () -> Unit,
     onRefresh: () -> Unit,
     onOpenDetail: (DetailCard) -> Unit,
@@ -95,6 +104,7 @@ fun HomeScreen(
         WeatherScene(
             kind = kind,
             isDay = isDay,
+            hourOfDay = hourOfDay,
             precipitationMm = data?.current?.precipitation ?: 0.0,
             precipitationProbability = data?.current?.let { c ->
                 data.hourly.firstOrNull { it.time.hour == c.time.hour || abs(it.time.hour - c.time.hour) <= 1 }
@@ -113,11 +123,11 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.18f to Color.Transparent,
-                        0.36f to Atmos.Midnight.copy(alpha = 0.30f),
-                        0.52f to Atmos.Midnight.copy(alpha = 0.88f),
-                        0.62f to Atmos.Midnight,
+                        0f to Atmos.Midnight.copy(alpha = 0.52f),
+                        0.14f to Color.Transparent,
+                        0.34f to Atmos.Midnight.copy(alpha = 0.24f),
+                        0.52f to Atmos.Midnight.copy(alpha = 0.86f),
+                        0.64f to Atmos.Midnight,
                         1f to Atmos.Midnight
                     )
                 )
@@ -142,15 +152,19 @@ fun HomeScreen(
                     OfficialAlertBanner(alert, onOpenAlert)
                     Spacer(Modifier.height(10.dp))
                 }
-                NowcastStrip(data, state.settings, onOpenDetail)
+                NowcastCards(data, state.settings, onOpenDetail)
                 ForecastHazardBanner(data, onOpenDetail)
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(22.dp))
+                TrendsSection(data, state.settings, onOpenForecast, onOpenDetail)
+                Spacer(Modifier.height(24.dp))
+                UvSunSection(data, state.settings, onOpenDetail)
+                Spacer(Modifier.height(24.dp))
                 FocusGrid(state, data, onOpenDetail)
-                Spacer(Modifier.height(26.dp))
-                HourlySection(data, state.settings, onOpenForecast)
-                Spacer(Modifier.height(26.dp))
+                Spacer(Modifier.height(24.dp))
                 DailySection(data, state.settings, onOpenForecast)
-                Spacer(Modifier.height(26.dp))
+                Spacer(Modifier.height(24.dp))
+                ActivitiesSection(data)
+                Spacer(Modifier.height(24.dp))
                 DataFootnote(data, state, onOpenSettings)
             }
             Spacer(Modifier.height(24.dp))
@@ -355,63 +369,129 @@ private fun HeroSkeleton(state: AtmosUiState, onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun NowcastStrip(
+private fun NowcastCards(
     data: WeatherData,
     settings: AtmosSettings,
     onOpenDetail: (DetailCard) -> Unit
 ) {
-    val outlook = remember(data.fetchedAtMillis, data.minutely.size) { Nowcast.outlook(data) } ?: return
-    val starts = outlook.startsInMinutes
-    if (!outlook.rainingNow && (starts == null || starts > 120)) return
-    val title = when {
-        outlook.rainingNow && outlook.endsInMinutes != null ->
-            Loc.t("Rain easing in about {} min", outlook.endsInMinutes)
+    val outlook = remember(data.fetchedAtMillis, data.minutely.size) { Nowcast.outlook(data) }
+    val next = data.hourly.firstOrNull()
+    val amount = outlook?.amountNext60mm ?: next?.precipitation ?: 0.0
+    val peak = outlook?.peakProbability ?: next?.precipProbability
+    val starts = outlook?.startsInMinutes
+    val status = when {
+        outlook == null -> Loc.tr("Unavailable")
         outlook.rainingNow -> Loc.tr("Rain is falling now")
-        starts == null -> return
-        starts <= 10 -> Loc.tr("Rain starting any minute")
-        else -> Loc.t("Rain likely in about {} min", starts)
+        starts != null && starts <= 120 -> Loc.t("Rain likely in about {} min", starts)
+        else -> Loc.tr("Dry next 2 h")
     }
-    val amount = "${Fmt.precip(outlook.amountNext60mm, settings.precipitationUnit)} ${settings.precipitationUnit.symbol}"
-    AtmosCard(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
-        onClick = { onOpenDetail(DetailCard.PRECIP) }
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(32.dp).clip(RoundedCornerShape(11.dp))
-                    .background(Atmos.Ice.copy(alpha = 0.10f)),
-                contentAlignment = Alignment.Center
+    val statusCaption = when {
+        outlook == null -> Loc.tr("Minutely series not provided for this place")
+        outlook.rainingNow && outlook.endsInMinutes != null ->
+            Loc.t("Easing in about {} min", outlook.endsInMinutes)
+        outlook.rainingNow -> Loc.tr("Nowcast · next 2 h")
+        else -> Loc.tr("Nowcast · next 2 h")
+    }
+
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        SectionHeader("Live now", trailing = "Tap any card for detail")
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            AtmosCard(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = { onOpenDetail(DetailCard.PRECIP) }
             ) {
-                Icon(AtmosIcons.CloudRain, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(17.dp))
-            }
-            Spacer(Modifier.width(11.dp))
-            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(32.dp).clip(RoundedCornerShape(11.dp))
+                            .background(Atmos.Ice.copy(alpha = 0.10f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(AtmosIcons.CloudRain, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(17.dp))
+                    }
+                    Spacer(Modifier.width(9.dp))
+                    Text(
+                        "Rain nowcast",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.Secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
                 Text(
-                    title,
+                    status,
                     style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                     color = Atmos.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    statusCaption,
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            AtmosCard(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = { onOpenDetail(DetailCard.PRECIP) }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(32.dp).clip(RoundedCornerShape(11.dp))
+                            .background(Atmos.Ice.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(AtmosIcons.Droplet, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(17.dp))
+                    }
+                    Spacer(Modifier.width(9.dp))
+                    Text(
+                        "Next hour",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.Secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        Fmt.precip(amount, settings.precipitationUnit),
+                        fontFamily = GeistMono,
+                        fontWeight = FontWeight.Light,
+                        fontSize = (26 * Atmos.textScale).sp,
+                        lineHeight = (30 * Atmos.textScale).sp,
+                        color = Atmos.White.copy(alpha = 0.94f),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        settings.precipitationUnit.symbol,
+                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                        color = Atmos.Muted,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    peak?.let { Loc.t("Peak chance {}%", it) } ?: Loc.tr("Chance unavailable"),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = if ((peak ?: 0) >= 20) Atmos.Ice else Atmos.Muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(2.dp))
                 Text(
-                    Loc.t(
-                        "Next hour {} · {}% peak chance",
-                        amount,
-                        outlook.peakProbability
-                    ),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = Atmos.Secondary,
+                    if (outlook != null) Loc.tr("Nowcast amount") else Loc.tr("Hourly forecast"),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted.copy(alpha = 0.8f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "NOWCAST",
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                color = Atmos.Ice
-            )
         }
     }
 }
@@ -509,43 +589,24 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
     val current = data.current
     val imperial = Fmt.isImperial(s)
     val air = data.air
-    val uv = data.hourly.firstOrNull()?.uvIndex
     val vis = data.hourly.firstOrNull()?.visibility
     val pressure = Fmt.pressure(current.pressureMsl, s.pressureUnit)
-    // Probability is a chance, the amount is a separate quantity. Both are shown
-    // explicitly so nobody has to decode a lone droplet icon.
-    val next12 = data.hourly.take(12)
-    val next12Prob = next12.mapNotNull { it.precipProbability }.maxOrNull()
-    val next12Mm = next12.sumOf { it.precipitation }
 
     Column(Modifier.padding(horizontal = 20.dp)) {
-        SectionHeader("Right now", trailing = "Tap any card for detail")
+        SectionHeader("Conditions", trailing = "Tap any card for detail")
         Spacer(Modifier.height(10.dp))
 
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard(
-                title = "UV index",
-                icon = AtmosIcons.Sun,
-                value = uv?.let { String.format(java.util.Locale.US, "%.1f", it) } ?: "—",
-                unit = "",
-                caption = if (uv == null) "Unavailable" else Fmt.uvLabel(uv),
-                accent = if (uv == null) Atmos.Muted else Fmt.uvColor(uv),
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = { onOpenDetail(DetailCard.UV) }
-            )
             StatCard(
                 title = "Wind",
                 icon = AtmosIcons.Wind,
                 value = Fmt.wind(current.windSpeed, s.windUnit),
                 unit = s.windUnit.symbol,
-                caption = "${Fmt.compass(current.windDirection)} · gusts ${Fmt.wind(current.windGusts, s.windUnit)}",
+                caption = "${Fmt.compass(current.windDirection)} · ${Loc.tr("gusts")} ${Fmt.wind(current.windGusts, s.windUnit)}",
                 accent = Atmos.Ice,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onOpenDetail(DetailCard.WIND) }
             )
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
                 title = "Humidity",
                 icon = AtmosIcons.Droplet,
@@ -556,6 +617,9 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onOpenDetail(DetailCard.HUMIDITY) }
             )
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
                 title = "Pressure",
                 icon = AtmosIcons.Gauge,
@@ -566,9 +630,6 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onOpenDetail(DetailCard.PRESSURE) }
             )
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
                 title = "Visibility",
                 icon = AtmosIcons.Eye,
@@ -577,142 +638,487 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
                 caption = vis?.let { v ->
                     val km = v / 1000.0
                     when {
-                        km >= 20 -> "Excellent"
-                        km >= 10 -> "Good"
-                        km >= 4 -> "Moderate"
-                        km >= 1 -> "Poor"
-                        else -> "Very poor"
+                        km >= 20 -> Loc.tr("Excellent")
+                        km >= 10 -> Loc.tr("Good")
+                        km >= 4 -> Loc.tr("Moderate")
+                        km >= 1 -> Loc.tr("Poor")
+                        else -> Loc.tr("Very poor")
                     }
-                } ?: "Unavailable",
+                } ?: Loc.tr("Unavailable"),
                 accent = Atmos.Secondary,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onOpenDetail(DetailCard.VISIBILITY) }
             )
-            StatCard(
-                title = "Air quality",
-                icon = AtmosIcons.Leaf,
-                value = air?.europeanAqi?.toString() ?: "—",
-                unit = "EAQI",
-                caption = air?.europeanAqi?.let { Fmt.aqiLabel(it) } ?: "Unavailable",
-                accent = air?.europeanAqi?.let { Fmt.aqiColor(it) } ?: Atmos.Muted,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = { onOpenDetail(DetailCard.AIR) }
+        }
+        Spacer(Modifier.height(10.dp))
+        AirQualityCard(air, onOpenDetail)
+    }
+}
+
+@Composable
+private fun AirQualityCard(air: com.alican.atmos.core.AirQuality?, onOpenDetail: (DetailCard) -> Unit) {
+    val aqi = air?.europeanAqi
+    val accent = aqi?.let { Fmt.aqiColor(it) } ?: Atmos.Muted
+    AtmosCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { onOpenDetail(DetailCard.AIR) }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(34.dp).clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(AtmosIcons.Leaf, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Air quality",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color = Atmos.Secondary,
+                    maxLines = 1
+                )
+                Text(
+                    aqi?.let { Fmt.aqiLabel(it) } ?: Loc.tr("Unavailable"),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = if (aqi == null) Atmos.Muted else Atmos.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (aqi != null) {
+                Text(
+                    aqi.toString(),
+                    fontFamily = GeistMono,
+                    fontWeight = FontWeight.Light,
+                    fontSize = (24 * Atmos.textScale).sp,
+                    color = accent,
+                    maxLines = 1
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "EAQI",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        SegmentedBar(
+            segments = listOf(
+                Atmos.Good,
+                Color(0xFFB9C7A3),
+                Atmos.Gold,
+                Color(0xFFDD9F72),
+                Atmos.Danger,
+                Color(0xFFB85C6A)
+            ),
+            fraction = (aqi ?: 0) / 100f,
+            modifier = Modifier.fillMaxWidth().height(16.dp),
+            showMarker = aqi != null
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            buildString {
+                append(Loc.tr("European AQI · CAMS"))
+                air?.pm25?.let { append(" · PM2.5 ${String.format(java.util.Locale.US, "%.0f", it)} µg/m³") }
+            },
+            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            color = Atmos.Muted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun TrendsSection(
+    data: WeatherData,
+    settings: AtmosSettings,
+    onOpenForecast: () -> Unit,
+    onOpenDetail: (DetailCard) -> Unit
+) {
+    val hours = remember(data.fetchedAtMillis) {
+        val now = data.current.time.withMinute(0).withSecond(0).withNano(0)
+        data.hourly.filter { !it.time.isBefore(now) }.take(24)
+    }
+    if (hours.size < 2) return
+    val unit = settings.temperatureUnit
+    val temps = hours.map { it.temperature }
+    val minT = temps.min()
+    val maxT = temps.max()
+    val total = hours.sumOf { it.precipitation }
+    val peakChance = hours.mapNotNull { it.precipProbability }.maxOrNull()
+
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionHeader("Next 24 hours", modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Pill("Full forecast", icon = AtmosIcons.Calendar, tint = Atmos.Ice, onClick = onOpenForecast)
+        }
+        Spacer(Modifier.height(10.dp))
+        AtmosCard(Modifier.fillMaxWidth(), onClick = onOpenForecast) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Temperature trend",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.White
+                    )
+                    Text(
+                        "Hourly model curve · local time",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    "H ${Fmt.temp(maxT, unit)}°  L ${Fmt.temp(minT, unit)}°",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                    color = Atmos.Secondary,
+                    maxLines = 1
+                )
+            }
+            Spacer(Modifier.height(11.dp))
+            TemperatureCurve(
+                values = temps,
+                times = hours.map { it.time },
+                unit = unit,
+                modifier = Modifier.fillMaxWidth().height(118.dp)
             )
         }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard(
-                title = "Rain chance",
-                icon = AtmosIcons.CloudRain,
-                value = next12Prob?.toString() ?: "—",
-                unit = if (next12Prob == null) "" else "%",
-                caption = when {
-                    next12Prob == null -> "No signal"
-                    next12Mm > 0.02 -> Loc.t(
-                        "Peak in next 12 h · {} expected",
-                        Fmt.precip(next12Mm, s.precipitationUnit) + " " + s.precipitationUnit.symbol
+        AtmosCard(Modifier.fillMaxWidth(), onClick = { onOpenDetail(DetailCard.PRECIP) }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Precipitation",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.White
                     )
-                    else -> "Peak in next 12 h · no amount expected"
-                },
-                accent = Atmos.Ice,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = { onOpenDetail(DetailCard.PRECIP) }
-            )
-            StatCard(
-                title = "Sun",
-                icon = AtmosIcons.Sunrise,
-                value = data.daily.firstOrNull()?.sunrise?.let { Fmt.clock(it) } ?: "—",
-                unit = "",
-                caption = data.daily.firstOrNull()?.sunset?.let { "Sets ${Fmt.clock(it)}" } ?: "Unavailable",
-                accent = Atmos.Gold,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = { onOpenDetail(DetailCard.SUN) }
+                    Text(
+                        "Hourly amount · not probability",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        Fmt.precip(total, settings.precipitationUnit),
+                        fontFamily = GeistMono,
+                        fontWeight = FontWeight.Light,
+                        fontSize = (22 * Atmos.textScale).sp,
+                        color = Atmos.White.copy(alpha = 0.94f),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        settings.precipitationUnit.symbol,
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Muted,
+                        modifier = Modifier.padding(bottom = 3.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            if (total <= 0.005 && hours.all { it.precipitation <= 0.005 }) {
+                Box(
+                    Modifier.fillMaxWidth().height(72.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No measurable precipitation modelled in the next 24 hours",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = Atmos.Muted,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                PrecipBarChart(
+                    amounts = hours.map { it.precipitation },
+                    times = hours.map { it.time },
+                    unit = settings.precipitationUnit,
+                    modifier = Modifier.fillMaxWidth().height(108.dp)
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                peakChance?.let {
+                    Loc.t("Bars show amount in {} · peak chance {}%", settings.precipitationUnit.symbol, it)
+                } ?: Loc.t("Bars show amount in {}", settings.precipitationUnit.symbol),
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
 
 @Composable
-private fun HourlySection(data: WeatherData, settings: com.alican.atmos.core.AtmosSettings, onOpenForecast: () -> Unit) {
-    val hours = remember(data.fetchedAtMillis) {
-        val now = data.current.time
-        data.hourly.filter { !it.time.isBefore(now.withMinute(0).withSecond(0).withNano(0)) }.take(24)
+private fun UvSunSection(
+    data: WeatherData,
+    settings: AtmosSettings,
+    onOpenDetail: (DetailCard) -> Unit
+) {
+    val today = data.daily.firstOrNull()
+    val uv = data.hourly.firstOrNull()?.uvIndex ?: today?.uvMax
+    val uvMax = today?.uvMax ?: data.hourly.take(24).mapNotNull { it.uvIndex }.maxOrNull()
+    val peakHour = data.hourly.take(24)
+        .filter { it.uvIndex != null }
+        .maxByOrNull { it.uvIndex ?: 0.0 }
+        ?.time
+    val uvColor = uv?.let { Fmt.uvColor(it) } ?: Atmos.Muted
+    val uvSegments = listOf(0.5, 2.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.0)
+        .map { Fmt.uvColor(it) }
+
+    val sunrise = today?.sunrise
+    val sunset = today?.sunset
+    val current = data.current
+    val fraction = if (current.isDay && sunrise != null && sunset != null && sunset.isAfter(sunrise)) {
+        val total = java.time.Duration.between(sunrise, sunset).seconds.toFloat()
+        val elapsed = java.time.Duration.between(sunrise, current.time).seconds.toFloat()
+        if (total > 0f && elapsed in 0f..total) elapsed / total else null
+    } else null
+    val daylight = if (sunrise != null && sunset != null && sunset.isAfter(sunrise)) {
+        val minutes = java.time.Duration.between(sunrise, sunset).toMinutes().toInt()
+        Loc.t("Daylight {} h {} min", minutes / 60, minutes % 60)
+    } else {
+        Loc.tr("Sun times unavailable")
     }
-    if (hours.isEmpty()) return
-    Column {
-        Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-            SectionHeader("Next 24 hours", modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Pill("Full forecast", icon = AtmosIcons.Calendar, tint = Atmos.Ice, onClick = onOpenForecast)
-        }
+
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        SectionHeader("Sun & UV")
         Spacer(Modifier.height(10.dp))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(hours, key = { it.time.toString() }) { hour ->
-                val isNow = hour == hours.first()
-                val prob = hour.precipProbability
-                val kind = WeatherKind.fromCode(hour.weatherCode)
-                Column(
-                    Modifier
-                        .width(104.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            if (isNow) Atmos.Ice.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.035f)
-                        )
-                        .padding(vertical = 12.dp, horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            AtmosCard(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = { onOpenDetail(DetailCard.UV) }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (isNow) Loc.tr("Now") else Fmt.hourShort(hour.time) + ":00",
+                        "UV index",
                         style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                        color = if (isNow) Atmos.Ice else Atmos.Secondary,
+                        color = Atmos.Secondary,
+                        modifier = Modifier.weight(1f),
                         maxLines = 1
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Icon(
-                        Fmt.kindIcon(kind, hour.isDay),
-                        contentDescription = WeatherKindCodes.label(hour.weatherCode, hour.isDay),
-                        tint = if (hour.isDay) Atmos.Secondary else Atmos.Ice.copy(alpha = 0.8f),
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(Modifier.height(6.dp))
+                    Icon(AtmosIcons.Sun, contentDescription = null, tint = uvColor, modifier = Modifier.size(15.dp))
+                }
+                Spacer(Modifier.height(9.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        Loc.tr(WeatherKindCodes.label(hour.weatherCode, hour.isDay)),
+                        uv?.let { String.format(java.util.Locale.US, "%.1f", it) } ?: "—",
+                        fontFamily = GeistMono,
+                        fontWeight = FontWeight.Light,
+                        fontSize = (26 * Atmos.textScale).sp,
+                        lineHeight = (30 * Atmos.textScale).sp,
+                        color = Atmos.White.copy(alpha = 0.94f),
+                        maxLines = 1
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        uv?.let { Fmt.uvLabel(it) } ?: Loc.tr("Unavailable"),
                         style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                        color = Atmos.Muted,
-                        maxLines = 2,
-                        minLines = 2,
-                        textAlign = TextAlign.Center,
+                        color = uvColor,
+                        modifier = Modifier.padding(bottom = 3.dp),
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(Modifier.height(8.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                SegmentedBar(
+                    segments = uvSegments,
+                    fraction = ((uv ?: 0.0) / 11.0).toFloat(),
+                    modifier = Modifier.fillMaxWidth().height(16.dp),
+                    showMarker = uv != null
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (uvMax != null && peakHour != null) {
+                        Loc.t(
+                            "Peak today {} · {}",
+                            String.format(java.util.Locale.US, "%.1f", uvMax),
+                            Fmt.clock(peakHour)
+                        )
+                    } else {
+                        Loc.tr("Peak unavailable")
+                    },
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    uvGuidance(uv),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = uvColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            AtmosCard(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onClick = { onOpenDetail(DetailCard.SUN) }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "${Fmt.temp(hour.temperature, settings.temperatureUnit)}°",
-                        fontFamily = GeistMono,
-                        fontSize = (18 * Atmos.textScale).sp,
-                        color = Atmos.White.copy(alpha = 0.95f),
+                        "Sun",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.Secondary,
+                        modifier = Modifier.weight(1f),
                         maxLines = 1
                     )
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            AtmosIcons.Droplet,
-                            contentDescription = Loc.tr("Rain chance"),
-                            tint = Atmos.Ice.copy(alpha = if ((prob ?: 0) >= 20) 0.95f else 0.45f),
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(Modifier.width(3.dp))
-                        Text(
-                            Loc.t("Rain {}%", prob ?: 0),
-                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                            color = if ((prob ?: 0) >= 20) Atmos.Ice else Atmos.Secondary,
-                            maxLines = 1
-                        )
-                    }
+                    Icon(AtmosIcons.Sunrise, contentDescription = null, tint = Atmos.Gold, modifier = Modifier.size(15.dp))
+                }
+                Spacer(Modifier.height(2.dp))
+                SunArc(
+                    fraction = fraction,
+                    modifier = Modifier.fillMaxWidth().height(78.dp)
+                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        AtmosIcons.Sunrise,
+                        contentDescription = Loc.tr("Sunrise"),
+                        tint = Atmos.Gold,
+                        modifier = Modifier.size(11.dp)
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        sunrise?.let { Fmt.clock(it) } ?: "—",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Secondary,
+                        maxLines = 1
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Icon(
+                        AtmosIcons.Sunset,
+                        contentDescription = Loc.tr("Sunset"),
+                        tint = Atmos.GoldSoft,
+                        modifier = Modifier.size(11.dp)
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        sunset?.let { Fmt.clock(it) } ?: "—",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Secondary,
+                        maxLines = 1
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    daylight,
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+private fun uvGuidance(uv: Double?): String = when {
+    uv == null -> Loc.tr("UV guidance unavailable")
+    uv < 3.0 -> Loc.tr("No sun protection needed")
+    uv < 6.0 -> Loc.tr("Protection recommended")
+    uv < 8.0 -> Loc.tr("Seek shade around midday")
+    else -> Loc.tr("Avoid direct sun at midday")
+}
+
+@Composable
+private fun ActivitiesSection(data: WeatherData) {
+    val results = remember(data.fetchedAtMillis, data.current.isDay, data.air?.time) {
+        Activities.evaluate(data)
+    }
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        SectionHeader("Outdoor activities", trailing = "Modelled")
+        Spacer(Modifier.height(10.dp))
+        AtmosCard(Modifier.fillMaxWidth()) {
+            results.forEachIndexed { index, item ->
+                ActivityRow(item)
+                if (index != results.lastIndex) {
+                    Spacer(Modifier.height(10.dp))
+                    Hairline()
+                    Spacer(Modifier.height(10.dp))
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Derived from the forecast. Not a safety guarantee.",
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityRow(item: ActivitySuitability) {
+    val color = when {
+        item.score >= 80 -> Atmos.Good
+        item.score >= 60 -> Atmos.Ice
+        item.score >= 40 -> Atmos.Gold
+        else -> Atmos.Danger
+    }
+    val icon = when (item.activity) {
+        OutdoorActivity.WALK -> AtmosIcons.Walk
+        OutdoorActivity.RUN -> AtmosIcons.Run
+        OutdoorActivity.CYCLE -> AtmosIcons.Bike
+    }
+    val label = when (item.activity) {
+        OutdoorActivity.WALK -> "Walk"
+        OutdoorActivity.RUN -> "Run"
+        OutdoorActivity.CYCLE -> "Cycle"
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(34.dp).clip(RoundedCornerShape(12.dp))
+                .background(color.copy(alpha = 0.11f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = Loc.tr(label), tint = color, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    label,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color = Atmos.White,
+                    maxLines = 1
+                )
+                Spacer(Modifier.width(7.dp))
+                Text(
+                    Loc.tr(item.status),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = color,
+                    maxLines = 1
+                )
+            }
+            Spacer(Modifier.height(5.dp))
+            ScoreBar(
+                score = item.score,
+                color = color,
+                modifier = Modifier.fillMaxWidth().height(5.dp)
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                item.factors.joinToString(" · ") { Loc.tr(it) },
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

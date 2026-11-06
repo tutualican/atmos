@@ -106,12 +106,24 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
         }
     }
 
+    val sceneKind = state.data?.kind ?: com.alican.atmos.core.WeatherKind.PARTLY_CLOUDY
+    val sceneIsDay = state.data?.current?.isDay ?: true
+    val sceneHour = state.data?.let { data ->
+        java.time.Instant.ofEpochMilli(state.now)
+            .atOffset(java.time.ZoneOffset.ofTotalSeconds(data.timezoneOffsetSeconds))
+            .hour
+    } ?: java.time.LocalTime.now().hour
+    LaunchedEffect(sceneKind, sceneIsDay, sceneHour) {
+        Atmos.applyAtmosphere(sceneKind, sceneIsDay, sceneHour)
+    }
+
     Box(Modifier.fillMaxSize().background(Atmos.Midnight)) {
         Crossfade(targetState = state.tab, animationSpec = tween(220), label = "tab") { tab ->
             stateHolder.SaveableStateProvider(tab.name) {
                 when (tab) {
                     AppTab.HOME -> HomeScreen(
                         state = state,
+                        hourOfDay = sceneHour,
                         onOpenLocation = vm::openLocationPicker,
                         onRefresh = { vm.refresh(force = true) },
                         onOpenDetail = vm::openDetail,

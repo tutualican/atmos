@@ -18,14 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.alican.atmos.R
 
-/** ATMOS palette — restrained, cinematic, expensive. */
+/** ATMOS palette — restrained, cinematic, expensive. Dynamic where the sky is. */
 object Atmos {
-    val Midnight = Color(0xFF121824)
-    val DeepNavy = Color(0xFF151E2C)
-    val Charcoal = Color(0xFF1B2231)
-    val Surface = Color(0xFF222A3A)
-    val SurfaceHigh = Color(0xFF2A3345)
-    val SurfaceLift = Color(0xFF303A4E)
+    private var atmosphere: AtmosAtmosphere by mutableStateOf(defaultAtmosphere())
+
+    /** Applies the palette that matches the current weather and the local time of the place. */
+    fun applyAtmosphere(kind: com.alican.atmos.core.WeatherKind, isDay: Boolean, hour: Int) {
+        val next = atmosphereFor(kind, isDay, hour)
+        if (next != atmosphere) atmosphere = next
+    }
+
+    val Midnight: Color get() = atmosphere.background
+    val DeepNavy: Color get() = atmosphere.backgroundAlt
+    val Charcoal: Color get() = atmosphere.surface
+    val Surface: Color get() = atmosphere.surface
+    val SurfaceHigh: Color get() = atmosphere.surfaceAlt
+    val SurfaceLift: Color get() = atmosphere.surfaceLift
 
     val White = Color(0xFFFFFFFF)
     val Text = Color(0xFFFFFFFF)
@@ -36,14 +44,14 @@ object Atmos {
     val IceDimBase = Color(0xFF7FA6C6)
 
     /**
-     * Optional Material You accent. Only the accent shifts; the Midnight palette stays
-     * untouched so the identity of the app does not dissolve into wallpaper colours.
+     * Optional Material You accent. Only the accent shifts; the atmosphere palette stays
+     * intact so the identity of the app does not dissolve into wallpaper colours.
      */
     var accentOverride: Color? by mutableStateOf(null)
         private set
 
-    val Ice: Color get() = accentOverride ?: IceBase
-    val IceDim: Color get() = accentOverride?.copy(alpha = 0.82f) ?: IceDimBase
+    val Ice: Color get() = accentOverride ?: atmosphere.accent
+    val IceDim: Color get() = accentOverride?.copy(alpha = 0.82f) ?: atmosphere.accent.copy(alpha = 0.82f)
 
     fun applySystemAccent(context: android.content.Context, enabled: Boolean) {
         accentOverride = if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -76,9 +84,13 @@ object Atmos {
     val Hairline = Color(0x14FFFFFF)
     val HairlineStrong = Color(0x24FFFFFF)
 
-    /** Scene backdrop, slightly different from UI black so the object floats. */
-    val SkyTop = Color(0xFF1A2437)
-    val SkyBottom = Color(0xFF0B1017)
+    /** Warm accent for the sun, dawn and dusk. */
+    val Warm: Color get() = atmosphere.warm
+
+    /** Scene backdrop, kept in sync with the page background. */
+    val SkyTop: Color get() = atmosphere.skyTop
+    val SkyMid: Color get() = atmosphere.skyMid
+    val SkyBottom: Color get() = atmosphere.skyBottom
 }
 
 @OptIn(ExperimentalTextApi::class)

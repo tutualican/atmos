@@ -543,4 +543,93 @@ object AtmosIcons {
             curveTo(11.3f, 21.2f, 10.7f, 20.7f, 10.3f, 20f)
         })
     }
+
+    val Walk = icon("walk") {
+        stroke(
+            {
+                moveTo(13.4f, 4.6f)
+                curveTo(14.3f, 4.6f, 15f, 5.3f, 15f, 6.2f)
+                curveTo(15f, 7.1f, 14.3f, 7.8f, 13.4f, 7.8f)
+                curveTo(12.5f, 7.8f, 11.8f, 7.1f, 11.8f, 6.2f)
+                curveTo(11.8f, 5.3f, 12.5f, 4.6f, 13.4f, 4.6f)
+                close()
+            },
+            {
+                moveTo(13.2f, 8.6f)
+                lineTo(11.4f, 13.2f)
+                lineTo(14.6f, 16f)
+                lineTo(15.6f, 21f)
+                moveTo(11.4f, 13.2f)
+                lineTo(8.6f, 16.4f)
+                lineTo(8f, 21f)
+                moveTo(13.2f, 10.4f)
+                lineTo(9.6f, 9.4f)
+                moveTo(13.1f, 10.8f)
+                lineTo(16.4f, 12.2f)
+            }
+        )
+    }
+
+    val Run = icon("run") {
+        stroke(
+            {
+                moveTo(15f, 4.4f)
+                curveTo(15.9f, 4.4f, 16.6f, 5.1f, 16.6f, 6f)
+                curveTo(16.6f, 6.9f, 15.9f, 7.6f, 15f, 7.6f)
+                curveTo(14.1f, 7.6f, 13.4f, 6.9f, 13.4f, 6f)
+                curveTo(13.4f, 5.1f, 14.1f, 4.4f, 15f, 4.4f)
+                close()
+            },
+            {
+                moveTo(13.6f, 8.8f)
+                lineTo(10f, 12.8f)
+                lineTo(13.6f, 15.2f)
+                lineTo(16.6f, 20.6f)
+                moveTo(10f, 12.8f)
+                lineTo(6.6f, 16f)
+                lineTo(5.2f, 20.8f)
+                moveTo(13.8f, 9.6f)
+                lineTo(18f, 11.4f)
+                moveTo(13f, 9.2f)
+                lineTo(9.2f, 7.2f)
+            }
+        )
+    }
+
+    val Bike = icon("bike") {
+        stroke(
+            {
+                moveTo(9f, 16.2f)
+                curveTo(9f, 18.1f, 7.5f, 19.6f, 5.6f, 19.6f)
+                curveTo(3.7f, 19.6f, 2.2f, 18.1f, 2.2f, 16.2f)
+                curveTo(2.2f, 14.3f, 3.7f, 12.8f, 5.6f, 12.8f)
+                curveTo(7.5f, 12.8f, 9f, 14.3f, 9f, 16.2f)
+                close()
+            },
+            {
+                moveTo(21.8f, 16.2f)
+                curveTo(21.8f, 18.1f, 20.3f, 19.6f, 18.4f, 19.6f)
+                curveTo(16.5f, 19.6f, 15f, 18.1f, 15f, 16.2f)
+                curveTo(15f, 14.3f, 16.5f, 12.8f, 18.4f, 12.8f)
+                curveTo(20.3f, 12.8f, 21.8f, 14.3f, 21.8f, 16.2f)
+                close()
+            },
+            {
+                moveTo(5.6f, 16.2f)
+                lineTo(9.4f, 8.8f)
+                lineTo(14.6f, 8.8f)
+                lineTo(18.4f, 16.2f)
+                moveTo(9.4f, 16.2f)
+                lineTo(14.6f, 16.2f)
+                moveTo(9.4f, 8.8f)
+                lineTo(11.8f, 16.2f)
+                moveTo(8.4f, 8.2f)
+                lineTo(10.4f, 8.2f)
+                moveTo(14.6f, 8.8f)
+                lineTo(16.4f, 7.6f)
+                moveTo(15.6f, 7.2f)
+                lineTo(17.2f, 7.2f)
+            }
+        )
+    }
 }
