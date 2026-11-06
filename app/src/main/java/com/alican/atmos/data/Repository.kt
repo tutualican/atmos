@@ -85,6 +85,13 @@ class AtmosStore(context: Context) {
             prefs.edit().putString(KEY_PLACES, arr.toString()).apply()
         }
 
+    /** True once the first-launch location permission prompt has been shown. */
+    var locationPromptSeen: Boolean
+        get() = prefs.getBoolean(KEY_LOCATION_PROMPT, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_LOCATION_PROMPT, value).apply()
+        }
+
     var lastBundle: CachedBundle?
         get() = runCatching {
             val raw = prefs.getString(KEY_CACHE, null) ?: return@runCatching null
@@ -139,6 +146,7 @@ class AtmosStore(context: Context) {
         private const val KEY_PLACE = "place_v1"
         private const val KEY_PLACES = "places_v1"
         private const val KEY_CACHE = "cache_v1"
+        private const val KEY_LOCATION_PROMPT = "location_prompt_v1"
     }
 }
 

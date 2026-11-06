@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Semi-transparent Midnight glass. The alpha is deliberately low enough that the
+  wallpaper shows through, while the 65–70% dark scrim keeps white text readable
+  on bright wallpapers. No neon, no blur imitation — just depth.
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <corners android:radius="24dp" />
+    <corners android:radius="28dp" />
     <gradient
         android:angle="270"
-        android:startColor="#F21B2333"
-        android:endColor="#F2151E2C" />
-    <stroke android:width="0.8dp" android:color="#1FFFFFFF" />
+        android:startColor="#B31A2231"
+        android:endColor="#99151E2C" />
+    <stroke android:width="0.8dp" android:color="#26FFFFFF" />
 </shape>

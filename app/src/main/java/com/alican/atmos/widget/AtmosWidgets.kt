@@ -7,7 +7,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.TypedValue
 import android.widget.RemoteViews
+import androidx.compose.ui.graphics.toArgb
 import com.alican.atmos.MainActivity
 import com.alican.atmos.R
 import com.alican.atmos.core.AtmosSettings
@@ -30,6 +32,12 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 private val widgetScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+// Exact Midnight palette values, kept as ARGB so RemoteViews can apply them at runtime.
+private const val W_TEXT = 0xFFFFFFFF.toInt()
+private const val W_SECONDARY = 0xFFA6B2C4.toInt()
+private const val W_MUTED = 0xFF748198.toInt()
+private const val W_ICE = 0xFF9CC2E0.toInt()
 
 /** Shared rendering + refresh pipeline for the three ATMOS widget families. */
 object AtmosWidgets {
@@ -85,6 +93,8 @@ object AtmosWidgets {
     fun renderNow(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_now)
         val c = data.current
+        val scale = textScale(s)
+        val accent = accentArgb(context, s)
         views.setTextViewText(R.id.widget_location, data.place.name)
         views.setTextViewText(R.id.widget_updated, Loc.t("Updated {}", Fmt.relativeUpdate(data.fetchedAtMillis)))
         views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
@@ -108,15 +118,33 @@ object AtmosWidgets {
             )
         )
         views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
-        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
+        views.sizes(
+            scale,
+            R.id.widget_location to 15f,
+            R.id.widget_updated to 11f,
+            R.id.widget_temp to 52f,
+            R.id.widget_unit to 16f,
+            R.id.widget_condition to 15f,
+            R.id.widget_range to 12f,
+            R.id.widget_meta to 12f
+        )
+        views.colors(W_TEXT, R.id.widget_location, R.id.widget_temp, R.id.widget_condition)
+        views.colors(W_SECONDARY, R.id.widget_range)
+        views.colors(W_MUTED, R.id.widget_updated, R.id.widget_meta)
+        views.colors(accent, R.id.widget_unit)
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }
 
     fun renderHourly(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_hourly)
+        val scale = textScale(s)
+        val accent = accentArgb(context, s)
         views.setTextViewText(R.id.widget_location, data.place.name)
         views.setTextViewText(R.id.widget_updated, "${data.modelLabel} · ${Fmt.relativeUpdate(data.fetchedAtMillis)}")
+        views.sizes(scale, R.id.widget_location to 14f, R.id.widget_updated to 10f)
+        views.colors(W_TEXT, R.id.widget_location)
+        views.colors(W_MUTED, R.id.widget_updated)
         val now = data.current.time
         val hours = data.hourly.filter { !it.time.isBefore(now.withMinute(0).withSecond(0).withNano(0)) }.take(6)
         val hourIds = intArrayOf(
@@ -131,12 +159,21 @@ object AtmosWidgets {
         val probIds = intArrayOf(
             R.id.p0, R.id.p1, R.id.p2, R.id.p3, R.id.p4, R.id.p5
         )
+        val dropIds = intArrayOf(
+            R.id.d0, R.id.d1, R.id.d2, R.id.d3, R.id.d4, R.id.d5
+        )
         hours.forEachIndexed { i, hour ->
             if (i > 5) return@forEachIndexed
+            val wet = (hour.precipProbability ?: 0) >= 20
             views.setTextViewText(hourIds[i], if (i == 0) Loc.tr("Now") else Fmt.hourShort(hour.time) + ":00")
             views.setImageViewResource(iconIds[i], iconRes(WeatherKind.fromCode(hour.weatherCode), hour.isDay))
             views.setTextViewText(tempIds[i], "${Fmt.temp(hour.temperature, s.temperatureUnit)}°")
             views.setTextViewText(probIds[i], "${hour.precipProbability ?: 0}%")
+            views.sizes(scale, hourIds[i] to 11f, tempIds[i] to 16f, probIds[i] to 11f)
+            views.colors(W_SECONDARY, hourIds[i])
+            views.colors(W_TEXT, tempIds[i])
+            views.colors(if (wet) accent else W_SECONDARY, probIds[i])
+            views.setInt(dropIds[i], "setColorFilter", if (wet) accent else W_MUTED)
         }
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
@@ -144,6 +181,7 @@ object AtmosWidgets {
 
     fun renderDetail(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_detail)
+        val scale = textScale(s)
         views.setTextViewText(R.id.widget_location, Loc.t("{} · exposure", data.place.name))
         views.setTextViewText(R.id.widget_updated, Loc.t("Updated {}", Fmt.relativeUpdate(data.fetchedAtMillis)))
         val aqi = data.air?.europeanAqi
@@ -160,6 +198,32 @@ object AtmosWidgets {
         views.setTextViewText(R.id.uv_title, Loc.tr("UV index"))
         views.setTextViewText(R.id.wind_title, Loc.tr("Wind"))
         views.setTextViewText(R.id.hum_title, Loc.tr("Humidity"))
+        views.sizes(
+            scale,
+            R.id.widget_location to 13f,
+            R.id.widget_updated to 10f,
+            R.id.air_value to 26f,
+            R.id.uv_value to 26f,
+            R.id.wind_value to 26f,
+            R.id.hum_value to 26f,
+            R.id.air_label to 11f,
+            R.id.uv_label to 11f,
+            R.id.wind_label to 11f,
+            R.id.hum_label to 11f,
+            R.id.air_title to 10f,
+            R.id.uv_title to 10f,
+            R.id.wind_title to 10f,
+            R.id.hum_title to 10f
+        )
+        views.colors(W_TEXT, R.id.widget_location)
+        views.colors(W_MUTED, R.id.widget_updated, R.id.air_title, R.id.uv_title, R.id.wind_title, R.id.hum_title)
+        views.colors(
+            W_SECONDARY,
+            R.id.air_label, R.id.uv_label, R.id.wind_label, R.id.hum_label
+        )
+        views.colors(aqi?.let { Fmt.aqiColor(it).toArgb() } ?: W_TEXT, R.id.air_value)
+        views.colors(uv?.let { Fmt.uvColor(it).toArgb() } ?: W_TEXT, R.id.uv_value)
+        views.colors(W_TEXT, R.id.wind_value, R.id.hum_value)
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }
@@ -167,23 +231,40 @@ object AtmosWidgets {
     fun renderCompact(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_compact)
         val c = data.current
+        val scale = textScale(s)
+        val accent = accentArgb(context, s)
+        val rain = data.hourly.take(12).mapNotNull { it.precipProbability }.maxOrNull() ?: 0
+        val today = data.daily.firstOrNull()
         views.setTextViewText(R.id.widget_location, data.place.name)
         views.setTextViewText(R.id.widget_updated, Fmt.relativeUpdate(data.fetchedAtMillis))
         views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
         views.setTextViewText(R.id.widget_unit, s.temperatureUnit.symbol)
         views.setTextViewText(R.id.widget_condition, Loc.tr(com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay)))
-        val today = data.daily.firstOrNull()
         views.setTextViewText(
             R.id.widget_meta,
             Loc.t(
-                "H {}°  L {}°  ·  {}%",
+                "H {}°  L {}°",
                 Fmt.temp(today?.tempMax ?: c.temperature, s.temperatureUnit),
-                Fmt.temp(today?.tempMin ?: c.temperature, s.temperatureUnit),
-                c.humidity
+                Fmt.temp(today?.tempMin ?: c.temperature, s.temperatureUnit)
             )
         )
+        views.setTextViewText(R.id.widget_rain, Loc.t("Rain {}%", rain))
         views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
-        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
+        views.sizes(
+            scale,
+            R.id.widget_location to 13f,
+            R.id.widget_updated to 10f,
+            R.id.widget_temp to 40f,
+            R.id.widget_unit to 14f,
+            R.id.widget_condition to 13f,
+            R.id.widget_meta to 11f,
+            R.id.widget_rain to 11f
+        )
+        views.colors(W_TEXT, R.id.widget_location, R.id.widget_temp, R.id.widget_condition)
+        views.colors(W_MUTED, R.id.widget_updated)
+        views.colors(W_SECONDARY, R.id.widget_meta)
+        views.colors(accent, R.id.widget_unit, R.id.widget_rain)
+        views.setInt(R.id.widget_rain_icon, "setColorFilter", accent)
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }
@@ -191,6 +272,8 @@ object AtmosWidgets {
     fun renderStrip(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_strip)
         val c = data.current
+        val scale = textScale(s)
+        val accent = accentArgb(context, s)
         views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
         views.setTextViewText(R.id.widget_unit, s.temperatureUnit.symbol)
         views.setTextViewText(R.id.widget_condition, Loc.tr(com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay)))
@@ -201,25 +284,49 @@ object AtmosWidgets {
             outlook?.startsInMinutes != null && outlook.startsInMinutes <= 120 ->
                 Loc.t("in {} min", outlook.startsInMinutes)
             else -> {
-                val prob = data.hourly.firstOrNull()?.precipProbability ?: 0
-                "$prob%"
+                val prob = data.hourly.take(12).mapNotNull { it.precipProbability }.maxOrNull() ?: 0
+                Loc.t("Rain {}%", prob)
             }
         }
         views.setTextViewText(R.id.widget_rain, rainText)
         views.setTextViewText(R.id.widget_updated, Fmt.relativeUpdate(data.fetchedAtMillis))
         views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
-        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
-        views.setTextColor(R.id.widget_rain, accentArgb(context, s))
+        views.sizes(
+            scale,
+            R.id.widget_temp to 30f,
+            R.id.widget_unit to 13f,
+            R.id.widget_condition to 13f,
+            R.id.widget_location to 11f,
+            R.id.widget_rain to 14f,
+            R.id.widget_updated to 10f
+        )
+        views.colors(W_TEXT, R.id.widget_temp, R.id.widget_condition)
+        views.colors(W_SECONDARY, R.id.widget_location)
+        views.colors(W_MUTED, R.id.widget_updated)
+        views.colors(accent, R.id.widget_unit, R.id.widget_rain)
+        views.setInt(R.id.widget_rain_icon, "setColorFilter", accent)
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }
 
+    private fun textScale(s: AtmosSettings): Float = if (s.largerText) 1.12f else 1f
+
+    private fun RemoteViews.sizes(scale: Float, vararg pairs: Pair<Int, Float>) {
+        pairs.forEach { (id, sp) ->
+            setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, sp * scale)
+        }
+    }
+
+    private fun RemoteViews.colors(color: Int, vararg ids: Int) {
+        ids.forEach { setTextColor(it, color) }
+    }
+
     private fun accentArgb(context: Context, settings: AtmosSettings): Int {
         if (!settings.systemAccent || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
-            return 0xFF9CC2E0.toInt()
+            return W_ICE
         }
         return runCatching { context.getColor(android.R.color.system_accent1_200) }
-            .getOrDefault(0xFF9CC2E0.toInt())
+            .getOrDefault(W_ICE)
     }
 
     private fun launchIntent(context: Context): PendingIntent {
@@ -233,8 +340,9 @@ object AtmosWidgets {
     }
 
     fun iconRes(kind: WeatherKind, isDay: Boolean): Int = when (kind) {
-        WeatherKind.CLEAR, WeatherKind.MOSTLY_CLEAR -> if (isDay) R.drawable.ic_w_sun else R.drawable.ic_w_moon
-        WeatherKind.PARTLY_CLOUDY -> R.drawable.ic_w_partly
+        WeatherKind.CLEAR -> if (isDay) R.drawable.ic_w_sun else R.drawable.ic_w_moon
+        WeatherKind.MOSTLY_CLEAR, WeatherKind.PARTLY_CLOUDY ->
+            if (isDay) R.drawable.ic_w_partly else R.drawable.ic_w_partly_night
         WeatherKind.OVERCAST -> R.drawable.ic_w_cloud
         WeatherKind.FOG -> R.drawable.ic_w_fog
         WeatherKind.DRIZZLE, WeatherKind.RAIN, WeatherKind.FREEZING_RAIN -> R.drawable.ic_w_rain

@@ -13,6 +13,7 @@ import com.alican.atmos.i18n.Loc
 import com.alican.atmos.location.LocationHelper
 import com.alican.atmos.notify.RainAlerts
 import com.alican.atmos.widget.AtmosWidgets
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -44,6 +45,7 @@ data class AtmosUiState(
     val searching: Boolean = false,
     val searchError: String? = null,
     val locating: Boolean = false,
+    val locationPromptSeen: Boolean = true,
     val now: Long = System.currentTimeMillis(),
     val toast: String? = null,
     val officialAlerts: List<OfficialAlert> = emptyList(),
@@ -71,7 +73,8 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
             place = store.selectedPlace ?: defaultPlace,
             settings = store.settings,
             savedPlaces = store.savedPlaces,
-            tab = AppTab.HOME
+            tab = AppTab.HOME,
+            locationPromptSeen = store.locationPromptSeen
         )
     )
     val state: StateFlow<AtmosUiState> = _state.asStateFlow()
@@ -128,7 +131,8 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh(force: Boolean = true, silent: Boolean = false) {
-        if (refreshJob?.isActive == true) return
+        // A newer request (new city, first location fix, manual pull) must replace an in-flight one.
+        refreshJob?.cancel()
         val current = _state.value
         refreshJob = viewModelScope.launch {
             _state.update {
@@ -163,6 +167,8 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update { it.copy(officialAlerts = emptyList()) }
                 }
                 runCatching { RainAlerts.evaluate(context, result.data, _state.value.settings) }
+            } catch (t: CancellationException) {
+                throw t
             } catch (t: Throwable) {
                 _state.update {
                     it.copy(
@@ -185,7 +191,7 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
                 if (!silent) {
                     _state.update { it.copy(toast = "Location unavailable. Choose a city manually.") }
                 }
-                if (_state.value.data == null) refresh(force = true)
+                refresh(force = true)
                 return@launch
             }
             _state.update { it.copy(locating = false, locationPickerOpen = false) }
@@ -196,8 +202,14 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
     fun onLocationPermissionResult(granted: Boolean) {
         if (granted) locate() else {
             _state.update { it.copy(toast = "Location permission denied. Using saved city.") }
-            if (_state.value.data == null) refresh(force = true)
+            refresh(force = true)
         }
+    }
+
+    /** Remember that the first-launch prompt was shown so the system dialog is not repeated every start. */
+    fun markLocationPromptSeen() {
+        store.locationPromptSeen = true
+        _state.update { it.copy(locationPromptSeen = true) }
     }
 
     fun selectPlace(place: Place, save: Boolean = true) {
@@ -220,6 +232,8 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(savedPlaces = store.savedPlaces) }
         }
         _state.update { it.copy(savedPlaces = store.savedPlaces) }
+        // A location change must win over any refresh that is still running for the old place.
+        refreshJob?.cancel()
         refresh(force = true)
     }
 
@@ -284,6 +298,7 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (next.largerText != before.largerText) {
             com.alican.atmos.ui.theme.Atmos.applyReadable(next.largerText)
+            viewModelScope.launch(Dispatchers.IO) { AtmosWidgets.refreshAll(context) }
         }
     }
 

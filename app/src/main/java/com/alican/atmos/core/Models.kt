@@ -29,7 +29,8 @@ enum class WeatherKind {
 
     companion object {
         fun fromCode(code: Int): WeatherKind = when (code) {
-            0, 1 -> CLEAR
+            0 -> CLEAR
+            1 -> MOSTLY_CLEAR
             2 -> PARTLY_CLOUDY
             3 -> OVERCAST
             45, 48 -> FOG

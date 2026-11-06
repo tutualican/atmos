@@ -208,7 +208,11 @@ private class SceneEngine {
         cloudPuffs.clear()
         val r = Random(1337 + kind.ordinal)
         // A believable cumulus/stratocumulus cluster: tall centre, softer shoulders.
-        val count = if (kind == WeatherKind.CLEAR || kind == WeatherKind.MOSTLY_CLEAR) 7 else 16
+        val count = when (kind) {
+            WeatherKind.CLEAR -> 0
+            WeatherKind.MOSTLY_CLEAR -> 13
+            else -> 16
+        }
         repeat(count) { i ->
             val t = i / (count - 1f)
             val spread = (t - 0.5f) * 2f
@@ -289,7 +293,7 @@ private class SceneEngine {
     fun update(dt: Float, adaptive: Float): Boolean {
         if (frozen) return false
         time += dt
-        cloudShift = sin(time * 0.07f) * 0.012f + wind * 0.004f * sin(time * 0.13f)
+        cloudShift = sin(time * 0.16f) * 0.045f + wind * 0.014f * sin(time * 0.24f)
         val scaled = dt * motionScale * adaptive
 
         // Rain: falls across the whole viewport, originating under the cloud body.
@@ -514,12 +518,12 @@ private class SceneEngine {
 
     private fun drawFarClouds(scope: DrawScope, w: Float, h: Float) {
         if (kind == WeatherKind.CLEAR && isDay) return
-        val drift = (sin(time * 0.03f) * 0.014f + time * 0.0006f) % 1f
+        val drift = (sin(time * 0.05f) * 0.03f + time * 0.0018f) % 1f
         val baseAlpha = when {
             kind == WeatherKind.CLEAR -> 0.0f
-            kind == WeatherKind.MOSTLY_CLEAR -> 0.22f
-            kind == WeatherKind.PARTLY_CLOUDY -> 0.34f
-            else -> 0.42f
+            kind == WeatherKind.MOSTLY_CLEAR -> 0.34f
+            kind == WeatherKind.PARTLY_CLOUDY -> 0.46f
+            else -> 0.54f
         }
         if (baseAlpha == 0f) return
         val cy = h * 0.19f
@@ -546,14 +550,15 @@ private class SceneEngine {
     private fun drawMainCloud(scope: DrawScope, w: Float, h: Float) {
         val showCloud = kind != WeatherKind.CLEAR
         if (!showCloud) return
-        val clusterCenterX = w * 0.5f
-        val clusterCenterY = h * 0.235f
+        // Keep the sun visible for "mostly clear": nudge the cloud cluster left and lower.
+        val clusterCenterX = w * if (kind == WeatherKind.MOSTLY_CLEAR) 0.42f else 0.5f
+        val clusterCenterY = h * if (kind == WeatherKind.MOSTLY_CLEAR) 0.27f else 0.235f
         val scale = w * 0.9f
 
         val strength = when (kind) {
-            WeatherKind.MOSTLY_CLEAR -> 0.5f
-            WeatherKind.PARTLY_CLOUDY -> 0.72f
-            WeatherKind.OVERCAST, WeatherKind.FOG -> 0.92f
+            WeatherKind.MOSTLY_CLEAR -> 0.68f
+            WeatherKind.PARTLY_CLOUDY -> 0.86f
+            WeatherKind.OVERCAST, WeatherKind.FOG -> 0.94f
             else -> 1f
         }
         val shadowTint = if (kind.isStorm) Color(0xFF141A26) else Color(0xFF161E2B)
@@ -576,17 +581,18 @@ private class SceneEngine {
         )
 
         for (p in cloudPuffs) {
+            val bob = sin(time * 0.55f + p.rx * 5.2f) * h * 0.004f
             val px = clusterCenterX + (p.rx + cloudShift) * scale
-            val py = clusterCenterY + p.ry * h * 0.9f
+            val py = clusterCenterY + p.ry * h * 0.9f + bob
             val rw = p.rw * scale
             val rh = p.rh * h * 2.4f
             val lit = p.lit * (if (isDay) 1f else 0.55f)
             scope.drawOval(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        rimTint.copy(alpha = 0.30f * p.alpha * strength * lit),
-                        midTint.copy(alpha = 0.55f * p.alpha * strength),
-                        shadowTint.copy(alpha = 0.62f * p.alpha * strength),
+                        rimTint.copy(alpha = 0.42f * p.alpha * strength * lit),
+                        midTint.copy(alpha = 0.72f * p.alpha * strength),
+                        shadowTint.copy(alpha = 0.82f * p.alpha * strength),
                         Color.Transparent
                     ),
                     center = Offset(px - rw * 0.12f, py - rh * 0.28f),

@@ -34,6 +34,9 @@ The signed release APK is attached to [Releases](../../releases/latest).
 - Every icon that carries meaning is paired with a written label, so the interface never depends on
   recognising a glyph alone. Rain probability appears as text next to the droplet, in the hourly
   strip ("Rain 40%"), on each daily row and as the headline value of its own card.
+- "Mainly clear" and "partly cloudy" are drawn as a sun behind the cloud, never as a lone sun.
+- On first launch ATMOS asks for location once, then resolves the place and refreshes immediately;
+  a new location always replaces an in-flight refresh for the old one.
 
 ### Forecast
 - Next 24 / 48 hours with a temperature chart and a separate precipitation chart.
@@ -58,11 +61,16 @@ The signed release APK is attached to [Releases](../../releases/latest).
 
 ### Widgets
 Five independent widget families, all fed by the same cached model output:
-1. **Now** — temperature, condition, today's range, feels-like, humidity and wind.
-2. **Hourly** — next six hours with precipitation chance.
-3. **Air & exposure** — European AQI, UV, wind and humidity.
-4. **Compact 2×2** — square tile with temperature, condition and range.
-5. **Strip 4×1** — one-line temperature, sky and rain chance.
+1. **Now** — large temperature, condition, today's range, feels-like, humidity and wind.
+2. **Hourly** — next six hours, each with its own weather icon and a labelled rain chance.
+3. **Air & exposure** — European AQI, UV, wind and humidity with readable titles above values.
+4. **Compact 2×2** — temperature, condition, range and rain chance.
+5. **Strip 4×1** — icon, temperature, sky, location and rain chance in one line.
+
+All widgets share the Midnight palette at runtime: text uses the same white, secondary and muted
+tones as the app, unit and rain accents follow the optional Material You accent, and the background
+is a semi-transparent dark glass so the wallpaper stays visible while text keeps its contrast.
+Text scales with the *Larger text* setting, and AQI/UV values keep their semantic colours.
 
 Widgets can be pinned from *More → Home screen widgets*. They refresh every 30 minutes and after every
 successful app refresh. They never show data the app has not fetched.

@@ -92,6 +92,13 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        if (state.settings.useLocation && !state.locationPromptSeen && !LocationHelper.hasPermission(context)) {
+            vm.markLocationPromptSeen()
+            requestLocation()
+        }
+    }
+
     LaunchedEffect(state.toast) {
         state.toast?.let {
             snackbar.showSnackbar(Loc.tr(it))

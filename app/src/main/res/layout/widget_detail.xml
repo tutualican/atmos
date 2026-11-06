@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,50 +22,51 @@
             android:fontFamily="sans-serif-medium"
             android:maxLines="1"
             android:text="Istanbul · exposure"
-            android:textColor="#F2FFFFFF"
+            android:textColor="#FFFFFFFF"
             android:textSize="13sp" />
 
         <TextView
             android:id="@+id/widget_updated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:fontFamily="sans-serif"
             android:maxLines="1"
             android:text="Updated now"
-            android:textColor="#8A748198"
-            android:textSize="9sp" />
+            android:textColor="#748198"
+            android:textSize="10sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="10dp"
         android:baselineAligned="false"
         android:orientation="horizontal">
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical">
+        <LinearLayout style="@style/WidgetMetricColumn">
+            <TextView android:id="@+id/air_title" style="@style/WidgetMetricTitle" android:text="Air" />
             <TextView android:id="@+id/air_value" style="@style/WidgetMetricValue" />
             <TextView android:id="@+id/air_label" style="@style/WidgetMetricLabel" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/air_title" android:text="Air · EAQI" style="@style/WidgetMetricTitle" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical">
+        <LinearLayout style="@style/WidgetMetricColumn">
+            <TextView android:id="@+id/uv_title" style="@style/WidgetMetricTitle" android:text="UV" />
             <TextView android:id="@+id/uv_value" style="@style/WidgetMetricValue" />
             <TextView android:id="@+id/uv_label" style="@style/WidgetMetricLabel" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/uv_title" android:text="UV index" style="@style/WidgetMetricTitle" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical">
+        <LinearLayout style="@style/WidgetMetricColumn">
+            <TextView android:id="@+id/wind_title" style="@style/WidgetMetricTitle" android:text="Wind" />
             <TextView android:id="@+id/wind_value" style="@style/WidgetMetricValue" />
             <TextView android:id="@+id/wind_label" style="@style/WidgetMetricLabel" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/wind_title" android:text="Wind" style="@style/WidgetMetricTitle" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical">
+        <LinearLayout style="@style/WidgetMetricColumn">
+            <TextView android:id="@+id/hum_title" style="@style/WidgetMetricTitle" android:text="Humidity" />
             <TextView android:id="@+id/hum_value" style="@style/WidgetMetricValue" />
             <TextView android:id="@+id/hum_label" style="@style/WidgetMetricLabel" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/hum_title" android:text="Humidity" style="@style/WidgetMetricTitle" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

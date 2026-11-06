@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="18dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,49 +22,28 @@
             android:fontFamily="sans-serif-medium"
             android:maxLines="1"
             android:text="Istanbul"
-            android:textColor="#F2FFFFFF"
-            android:textSize="13sp" />
+            android:textColor="#FFFFFFFF"
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/widget_updated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:fontFamily="sans-serif"
             android:maxLines="1"
             android:text="Updated now"
-            android:textColor="#8A748198"
-            android:textSize="9sp" />
+            android:textColor="#748198"
+            android:textSize="11sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:layout_marginTop="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/widget_temp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.06"
-            android:maxLines="1"
-            android:text="14"
-            android:textColor="#DEFFFFFF"
-            android:textSize="44sp" />
-
-        <TextView
-            android:id="@+id/widget_unit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginEnd="8dp"
-            android:fontFamily="sans-serif-light"
-            android:text="°C"
-            android:textColor="#9CA6B2C4"
-            android:textSize="13sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -72,47 +51,79 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="bottom"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="-0.06"
+                    android:maxLines="1"
+                    android:text="14"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="52sp" />
+
+                <TextView
+                    android:id="@+id/widget_unit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginBottom="5dp"
+                    android:fontFamily="sans-serif-light"
+                    android:maxLines="1"
+                    android:text="°C"
+                    android:textColor="#9CC2E0"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/widget_condition"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif"
                 android:maxLines="1"
                 android:text="Partly cloudy"
-                android:textColor="#E6FFFFFF"
-                android:textSize="13sp" />
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/widget_range"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="3dp"
                 android:fontFamily="monospace"
                 android:maxLines="1"
                 android:text="H 16°  L 9°"
-                android:textColor="#8AA6B2C4"
-                android:textSize="10sp" />
-
-            <TextView
-                android:id="@+id/widget_meta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif"
-                android:maxLines="1"
-                android:text="Feels 13°   64%   12 km/h"
-                android:textColor="#8A748198"
-                android:textSize="10sp" />
+                android:textColor="#A6B2C4"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <ImageView
             android:id="@+id/widget_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
             android:contentDescription="Condition"
             android:src="@drawable/ic_w_partly" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif"
+        android:maxLines="1"
+        android:text="Feels 13°   64%   12 km/h"
+        android:textColor="#A6B2C4"
+        android:textSize="12sp" />
 </LinearLayout>

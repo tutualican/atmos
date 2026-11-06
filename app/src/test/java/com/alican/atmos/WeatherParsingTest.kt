@@ -126,6 +126,8 @@ class WeatherParsingTest {
         assertEquals(WeatherKind.HAIL, WeatherKind.fromCode(96))
         assertEquals(WeatherKind.SNOW, WeatherKind.fromCode(75))
         assertEquals(WeatherKind.FOG, WeatherKind.fromCode(48))
+        assertEquals(WeatherKind.MOSTLY_CLEAR, WeatherKind.fromCode(1))
+        assertEquals(WeatherKind.PARTLY_CLOUDY, WeatherKind.fromCode(2))
         assertEquals(WeatherKind.OVERCAST, WeatherKind.fromCode(199))
         assertTrue(WeatherKind.THUNDER.isStorm)
     }

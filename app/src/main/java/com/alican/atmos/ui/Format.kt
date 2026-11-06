@@ -180,8 +180,8 @@ object Fmt {
 
     fun kindIcon(kind: WeatherKind, isDay: Boolean): ImageVector = when (kind) {
         WeatherKind.CLEAR -> if (isDay) AtmosIcons.Sun else AtmosIcons.Moon
-        WeatherKind.MOSTLY_CLEAR -> if (isDay) AtmosIcons.Sun else AtmosIcons.Moon
-        WeatherKind.PARTLY_CLOUDY -> if (isDay) AtmosIcons.Cloud else AtmosIcons.Cloud
+        WeatherKind.MOSTLY_CLEAR -> if (isDay) AtmosIcons.PartlyCloudy else AtmosIcons.PartlyCloudyNight
+        WeatherKind.PARTLY_CLOUDY -> if (isDay) AtmosIcons.PartlyCloudy else AtmosIcons.PartlyCloudyNight
         WeatherKind.OVERCAST -> AtmosIcons.Cloud
         WeatherKind.FOG -> AtmosIcons.CloudFog
         WeatherKind.DRIZZLE -> AtmosIcons.Droplet

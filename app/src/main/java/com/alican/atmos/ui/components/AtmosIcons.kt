@@ -162,6 +162,59 @@ object AtmosIcons {
         })
     }
 
+    /**
+     * "Mostly clear" and "partly cloudy" both need a sun that is visibly *not* alone.
+     * A compact sun peeks out from behind the cloud so the icon matches the label at a glance.
+     */
+    val PartlyCloudy = icon("partlyCloudy") {
+        stroke({
+            moveTo(7.5f, 10.6f)
+            curveTo(9.21f, 10.6f, 10.6f, 9.21f, 10.6f, 7.5f)
+            curveTo(10.6f, 5.79f, 9.21f, 4.4f, 7.5f, 4.4f)
+            curveTo(5.79f, 4.4f, 4.4f, 5.79f, 4.4f, 7.5f)
+            curveTo(4.4f, 9.21f, 5.79f, 10.6f, 7.5f, 10.6f)
+            close()
+            moveTo(7.5f, 1.6f); lineTo(7.5f, 2.9f)
+            moveTo(1.6f, 7.5f); lineTo(2.9f, 7.5f)
+            moveTo(3.4f, 3.4f); lineTo(4.3f, 4.3f)
+            moveTo(3.4f, 11.6f); lineTo(4.3f, 10.7f)
+            moveTo(11.6f, 3.4f); lineTo(10.7f, 4.3f)
+        }, {
+            moveTo(17.6f, 20.6f)
+            curveTo(19.72f, 20.6f, 21.5f, 18.8f, 21.5f, 16.6f)
+            curveTo(21.5f, 14.5f, 19.9f, 12.8f, 17.8f, 12.6f)
+            curveTo(17.4f, 9.6f, 15f, 7.3f, 12f, 7.3f)
+            curveTo(8.8f, 7.3f, 6.2f, 9.9f, 6.2f, 13.1f)
+            curveTo(6.2f, 13.5f, 6.2f, 13.8f, 6.3f, 14.2f)
+            curveTo(4.9f, 14.8f, 4f, 16.1f, 4f, 17.6f)
+            curveTo(4f, 19.3f, 5.3f, 20.6f, 7f, 20.6f)
+            close()
+        })
+    }
+
+    val PartlyCloudyNight = icon("partlyCloudyNight") {
+        stroke({
+            moveTo(9.8f, 2.4f)
+            curveTo(7.9f, 3.4f, 6.6f, 5.3f, 6.6f, 7.5f)
+            curveTo(6.6f, 10.7f, 9.2f, 13.3f, 12.4f, 13.3f)
+            curveTo(13.8f, 13.3f, 15.1f, 12.8f, 16.1f, 11.9f)
+            curveTo(15.2f, 12.2f, 14.3f, 12.4f, 13.3f, 12.4f)
+            curveTo(10.1f, 12.4f, 7.5f, 9.8f, 7.5f, 6.6f)
+            curveTo(7.5f, 4.8f, 8.4f, 3.3f, 9.8f, 2.4f)
+            close()
+        }, {
+            moveTo(17.6f, 20.6f)
+            curveTo(19.72f, 20.6f, 21.5f, 18.8f, 21.5f, 16.6f)
+            curveTo(21.5f, 14.5f, 19.9f, 12.8f, 17.8f, 12.6f)
+            curveTo(17.4f, 9.6f, 15f, 7.3f, 12f, 7.3f)
+            curveTo(8.8f, 7.3f, 6.2f, 9.9f, 6.2f, 13.1f)
+            curveTo(6.2f, 13.5f, 6.2f, 13.8f, 6.3f, 14.2f)
+            curveTo(4.9f, 14.8f, 4f, 16.1f, 4f, 17.6f)
+            curveTo(4f, 19.3f, 5.3f, 20.6f, 7f, 20.6f)
+            close()
+        })
+    }
+
     val CloudRain = icon("cloudRain") {
         stroke({
             moveTo(17.5f, 15f)
