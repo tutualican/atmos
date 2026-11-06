@@ -375,7 +375,7 @@ fun MapScreen(
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Opacity", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted)
+                        Text("Opacity", style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = Atmos.Secondary)
                         Slider(
                             value = opacity,
                             onValueChange = { opacity = it },
@@ -407,7 +407,7 @@ fun MapScreen(
                                 )
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("light → heavy", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted)
+                        Text("Light → heavy rain", style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = Atmos.Secondary)
                         Spacer(Modifier.weight(1f))
                         Text(
                             "© Esri, HERE, Garmin · © OpenStreetMap contributors · RainViewer",

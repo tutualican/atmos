@@ -70,7 +70,8 @@ class LocalizationTest {
             "Home", "Map", "Forecast", "More", "Right now", "Next 24 hours",
             "7-day forecast", "Air quality", "Temperature", "Precipitation",
             "Weather map", "Language", "System default", "Sunrise", "Sunset",
-            "Clear sky", "Thunderstorm", "Good", "Moderate"
+            "Clear sky", "Thunderstorm", "Good", "Moderate",
+            "Rain chance", "Full forecast", "Larger text"
         )
         AppLanguage.entries.filter { it != AppLanguage.SYSTEM && it != AppLanguage.ENGLISH }.forEach { language ->
             Loc.apply(language)
@@ -96,6 +97,27 @@ class LocalizationTest {
             }
         // "Wind" is identical in German and English, so 15/16 is valid.
         assertEquals(true, counts.values.all { it >= 15 })
+    }
+
+    @Test
+    fun readabilityAndRainLabelsAreLocalized() {
+        Loc.apply(AppLanguage.TURKISH)
+        assertEquals("Yağış %40", Loc.t("Rain {}%", 40))
+        assertEquals("Yağış olasılığı", Loc.tr("Rain chance"))
+        assertEquals("Daha büyük yazı", Loc.tr("Larger text"))
+        assertEquals("Tüm tahmin", Loc.tr("Full forecast"))
+
+        Loc.apply(AppLanguage.GERMAN)
+        assertEquals("Regen 40 %", Loc.t("Rain {}%", 40))
+        assertEquals("Größere Schrift", Loc.tr("Larger text"))
+
+        Loc.apply(AppLanguage.SPANISH)
+        assertEquals("Lluvia 40 %", Loc.t("Rain {}%", 40))
+        assertEquals("Texto más grande", Loc.tr("Larger text"))
+
+        Loc.apply(AppLanguage.FRENCH)
+        assertEquals("Pluie 40 %", Loc.t("Rain {}%", 40))
+        assertEquals("Texte plus grand", Loc.tr("Larger text"))
     }
 
     @Test

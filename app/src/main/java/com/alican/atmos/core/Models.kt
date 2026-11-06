@@ -172,7 +172,8 @@ data class AtmosSettings(
     val refreshMinutes: Int = 15,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val rainAlerts: Boolean = false,
-    val systemAccent: Boolean = false
+    val systemAccent: Boolean = false,
+    val largerText: Boolean = false
 )
 
 /** Languages shipped with this build. Adding a locale means adding a strings table. */

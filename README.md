@@ -29,8 +29,11 @@ The signed release APK is attached to [Releases](../../releases/latest).
   gold motes, depth-sorted rain, snow, multi-layer fog, sunlight and cloud drift.
 - Lightning exists **only** when the WMO code is a thunderstorm. It never claims a strike time or place.
 - 96sp Geist Mono temperature at 87% white, condition, feels-like, humidity and wind beneath it.
-- Focus cards for UV, wind, humidity, pressure, visibility, air quality, next-hour rain and sun.
-  Every card opens a detail sheet with hourly context and an explicit data note.
+- Focus cards for UV, wind, humidity, pressure, visibility, air quality, a prominent 12-hour rain
+  chance and sun. Every card opens a detail sheet with hourly context and an explicit data note.
+- Every icon that carries meaning is paired with a written label, so the interface never depends on
+  recognising a glyph alone. Rain probability appears as text next to the droplet, in the hourly
+  strip ("Rain 40%"), on each daily row and as the headline value of its own card.
 
 ### Forecast
 - Next 24 / 48 hours with a temperature chart and a separate precipitation chart.
@@ -72,6 +75,8 @@ successful app refresh. They never show data the app has not fetched.
 - Adaptive animation quality, reduce-motion mode, lightning haptics.
 - Opt-in rain nowcast alerts and an accent-only Material You option (Android 12+). The Midnight
   background, contrast and typography stay fixed.
+- A "Larger text" switch scales the entire type system by 18% for readers who need more size, without
+  changing colours, data, spacing relationships or the layout.
 - Device location opt-in, saved cities, data-source transparency.
 
 ---
@@ -160,6 +165,8 @@ widget/      Five RemoteViews widget providers + shared renderer
 
 - All content is scrollable; cards size with intrinsic row heights; long labels ellipsize instead of clipping.
 - Dynamic type is respected; the temperature column yields space to the condition text.
+- Written labels accompany condition and rain icons; rain probability is never icon-only.
+- An 18% "Larger text" mode is available in Settings → Appearance and persists across launches.
 - Touch targets are at least 40dp; controls carry content descriptions.
 - Motion can be reduced globally; haptics follow the system ringer mode.
 

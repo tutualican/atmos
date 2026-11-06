@@ -282,6 +282,9 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
             com.alican.atmos.ui.theme.Atmos.applySystemAccent(context, next.systemAccent)
             viewModelScope.launch(Dispatchers.IO) { AtmosWidgets.refreshAll(context) }
         }
+        if (next.largerText != before.largerText) {
+            com.alican.atmos.ui.theme.Atmos.applyReadable(next.largerText)
+        }
     }
 
     fun openAlert(alert: OfficialAlert) = _state.update { it.copy(detailAlert = alert) }

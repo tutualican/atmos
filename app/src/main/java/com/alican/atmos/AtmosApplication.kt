@@ -12,6 +12,7 @@ class AtmosApplication : Application() {
             val settings = AtmosStore(this).settings
             Loc.apply(settings.language)
             com.alican.atmos.ui.theme.Atmos.applySystemAccent(this, settings.systemAccent)
+            com.alican.atmos.ui.theme.Atmos.applyReadable(settings.largerText)
         }
     }
 }

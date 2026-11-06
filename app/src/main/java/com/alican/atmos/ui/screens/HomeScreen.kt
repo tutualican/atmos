@@ -298,8 +298,8 @@ private fun Hero(data: WeatherData, settings: com.alican.atmos.core.AtmosSetting
             Spacer(Modifier.width(7.dp))
             Text(
                 "Model analysis · updated ${Fmt.relativeUpdate(data.fetchedAtMillis)}",
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                color = Atmos.Muted,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = Atmos.Secondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -512,8 +512,11 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
     val uv = data.hourly.firstOrNull()?.uvIndex
     val vis = data.hourly.firstOrNull()?.visibility
     val pressure = Fmt.pressure(current.pressureMsl, s.pressureUnit)
-    val nowcast = data.minutely.take(4)
-    val nextHourMm = nowcast.sumOf { it.precipitation }
+    // Probability is a chance, the amount is a separate quantity. Both are shown
+    // explicitly so nobody has to decode a lone droplet icon.
+    val next12 = data.hourly.take(12)
+    val next12Prob = next12.mapNotNull { it.precipProbability }.maxOrNull()
+    val next12Mm = next12.sumOf { it.precipitation }
 
     Column(Modifier.padding(horizontal = 20.dp)) {
         SectionHeader("Right now", trailing = "Tap any card for detail")
@@ -599,12 +602,18 @@ private fun FocusGrid(state: AtmosUiState, data: WeatherData, onOpenDetail: (Det
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
-                title = "Rain next hour",
+                title = "Rain chance",
                 icon = AtmosIcons.CloudRain,
-                value = Fmt.precip(nextHourMm, s.precipitationUnit),
-                unit = s.precipitationUnit.symbol,
-                caption = if (nextHourMm > 0.02) "Forecast amount"
-                else (data.minutely.firstOrNull()?.probability?.let { "Chance $it%" } ?: "No signal"),
+                value = next12Prob?.toString() ?: "—",
+                unit = if (next12Prob == null) "" else "%",
+                caption = when {
+                    next12Prob == null -> "No signal"
+                    next12Mm > 0.02 -> Loc.t(
+                        "Peak in next 12 h · {} expected",
+                        Fmt.precip(next12Mm, s.precipitationUnit) + " " + s.precipitationUnit.symbol
+                    )
+                    else -> "Peak in next 12 h · no amount expected"
+                },
                 accent = Atmos.Ice,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onOpenDetail(DetailCard.PRECIP) }
@@ -633,15 +642,8 @@ private fun HourlySection(data: WeatherData, settings: com.alican.atmos.core.Atm
     Column {
         Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             SectionHeader("Next 24 hours", modifier = Modifier.weight(1f))
-            Text(
-                "Details",
-                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                color = Atmos.Secondary,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onOpenForecast() }
-                    .padding(6.dp)
-            )
+            Spacer(Modifier.width(8.dp))
+            Pill("Full forecast", icon = AtmosIcons.Calendar, tint = Atmos.Ice, onClick = onOpenForecast)
         }
         Spacer(Modifier.height(10.dp))
         LazyRow(
@@ -651,52 +653,62 @@ private fun HourlySection(data: WeatherData, settings: com.alican.atmos.core.Atm
             items(hours, key = { it.time.toString() }) { hour ->
                 val isNow = hour == hours.first()
                 val prob = hour.precipProbability
+                val kind = WeatherKind.fromCode(hour.weatherCode)
                 Column(
                     Modifier
-                        .width(64.dp)
+                        .width(104.dp)
                         .clip(RoundedCornerShape(18.dp))
                         .background(
                             if (isNow) Atmos.Ice.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.035f)
                         )
-                        .padding(vertical = 12.dp, horizontal = 6.dp),
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        if (isNow) "Now" else Fmt.hourShort(hour.time) + ":00",
-                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                        color = if (isNow) Atmos.Ice else Atmos.Muted,
+                        if (isNow) Loc.tr("Now") else Fmt.hourShort(hour.time) + ":00",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = if (isNow) Atmos.Ice else Atmos.Secondary,
                         maxLines = 1
                     )
-                    Spacer(Modifier.height(9.dp))
+                    Spacer(Modifier.height(8.dp))
                     Icon(
-                        Fmt.kindIcon(WeatherKind.fromCode(hour.weatherCode), hour.isDay),
+                        Fmt.kindIcon(kind, hour.isDay),
                         contentDescription = WeatherKindCodes.label(hour.weatherCode, hour.isDay),
                         tint = if (hour.isDay) Atmos.Secondary else Atmos.Ice.copy(alpha = 0.8f),
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(26.dp)
                     )
-                    Spacer(Modifier.height(9.dp))
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        Loc.tr(WeatherKindCodes.label(hour.weatherCode, hour.isDay)),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Muted,
+                        maxLines = 2,
+                        minLines = 2,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         "${Fmt.temp(hour.temperature, settings.temperatureUnit)}°",
                         fontFamily = GeistMono,
-                        fontSize = 16.sp,
-                        color = Atmos.White.copy(alpha = 0.9f),
+                        fontSize = (18 * Atmos.textScale).sp,
+                        color = Atmos.White.copy(alpha = 0.95f),
                         maxLines = 1
                     )
-                    Spacer(Modifier.height(7.dp))
+                    Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             AtmosIcons.Droplet,
-                            contentDescription = null,
-                            tint = Atmos.Ice.copy(alpha = if ((prob ?: 0) > 20) 0.9f else 0.28f),
-                            modifier = Modifier.size(8.dp)
+                            contentDescription = Loc.tr("Rain chance"),
+                            tint = Atmos.Ice.copy(alpha = if ((prob ?: 0) >= 20) 0.95f else 0.45f),
+                            modifier = Modifier.size(12.dp)
                         )
-                        Spacer(Modifier.width(2.dp))
+                        Spacer(Modifier.width(3.dp))
                         Text(
-                            "${prob ?: 0}%",
+                            Loc.t("Rain {}%", prob ?: 0),
                             style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                            color = if ((prob ?: 0) > 20) Atmos.Ice else Atmos.Muted,
-                            maxLines = 1,
-                            fontSize = 9.sp
+                            color = if ((prob ?: 0) >= 20) Atmos.Ice else Atmos.Secondary,
+                            maxLines = 1
                         )
                     }
                 }
@@ -712,12 +724,34 @@ private fun DailySection(data: WeatherData, settings: com.alican.atmos.core.Atmo
     val weekMin = days.minOf { it.tempMin }
     val weekMax = days.maxOf { it.tempMax }
     Column(Modifier.padding(horizontal = 20.dp)) {
-        SectionHeader("7-day forecast", trailing = "Open forecast", trailingIcon = AtmosIcons.ChevronRight, onTrailingClick = onOpenForecast)
+        SectionHeader("7-day forecast")
         Spacer(Modifier.height(10.dp))
         AtmosCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 6.dp, horizontal = 16.dp)) {
             days.take(7).forEachIndexed { index, day ->
                 DayRow(day, index == 0, weekMin, weekMax, settings.temperatureUnit)
                 if (index != days.take(7).lastIndex) Hairline()
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        AtmosCard(Modifier.fillMaxWidth(), onClick = onOpenForecast) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(AtmosIcons.Calendar, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Full forecast",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                        color = Atmos.White
+                    )
+                    Text(
+                        "Hourly detail, precipitation chart and uncertainty band",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = Atmos.Muted,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(AtmosIcons.ChevronRight, contentDescription = null, tint = Atmos.Secondary, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -726,59 +760,65 @@ private fun DailySection(data: WeatherData, settings: com.alican.atmos.core.Atmo
 @Composable
 private fun DayRow(day: DayPoint, isToday: Boolean, weekMin: Double, weekMax: Double, unit: com.alican.atmos.core.TempUnit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 54.dp).padding(vertical = 9.dp),
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            if (isToday) "Today" else Fmt.weekday(day.date.atTime(12, 0)),
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            color = if (isToday) Atmos.White else Atmos.Secondary,
-            maxLines = 1,
-            modifier = Modifier.width(62.dp)
-        )
-        Icon(
-            Fmt.kindIcon(WeatherKind.fromCode(day.weatherCode), true),
-            contentDescription = WeatherKindCodes.label(day.weatherCode),
-            tint = Atmos.Secondary,
-            modifier = Modifier.size(17.dp)
-        )
-        Spacer(Modifier.width(8.dp))
-        Row(Modifier.width(46.dp), verticalAlignment = Alignment.CenterVertically) {
-            if ((day.precipProbabilityMax ?: 0) >= 10) {
-                Icon(AtmosIcons.Droplet, contentDescription = null, tint = Atmos.Ice.copy(alpha = 0.65f), modifier = Modifier.size(8.dp))
-                Spacer(Modifier.width(2.dp))
+        Row(Modifier.weight(1.2f), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Fmt.kindIcon(WeatherKind.fromCode(day.weatherCode), true),
+                contentDescription = WeatherKindCodes.label(day.weatherCode),
+                tint = Atmos.Secondary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
                 Text(
-                    "${day.precipProbabilityMax}%",
-                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                    color = Atmos.Ice.copy(alpha = 0.8f),
+                    if (isToday) Loc.tr("Today") else Fmt.weekday(day.date.atTime(12, 0)),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = if (isToday) Atmos.White else Atmos.Secondary,
                     maxLines = 1
+                )
+                Text(
+                    Loc.tr(WeatherKindCodes.label(day.weatherCode)),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+        Text(
+            Loc.t("Rain {}%", day.precipProbabilityMax ?: 0),
+            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            color = if ((day.precipProbabilityMax ?: 0) >= 20) Atmos.Ice else Atmos.Secondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(80.dp)
+        )
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "${Fmt.temp(day.tempMin, unit)}°",
                 fontFamily = GeistMono,
-                fontSize = 13.sp,
+                fontSize = (14 * Atmos.textScale).sp,
                 color = Atmos.Muted,
                 maxLines = 1,
-                modifier = Modifier.width(30.dp)
+                modifier = Modifier.width(34.dp)
             )
             RangeBar(
                 min = day.tempMin,
                 max = day.tempMax,
                 weekMin = weekMin,
                 weekMax = weekMax,
-                modifier = Modifier.weight(1f).height(4.dp).padding(horizontal = 4.dp)
+                modifier = Modifier.weight(1f).height(5.dp).padding(horizontal = 4.dp)
             )
             Text(
                 "${Fmt.temp(day.tempMax, unit)}°",
                 fontFamily = GeistMono,
-                fontSize = 13.sp,
-                color = Atmos.White.copy(alpha = 0.88f),
+                fontSize = (14 * Atmos.textScale).sp,
+                color = Atmos.White.copy(alpha = 0.9f),
                 maxLines = 1,
                 textAlign = TextAlign.End,
-                modifier = Modifier.width(30.dp)
+                modifier = Modifier.width(34.dp)
             )
         }
     }

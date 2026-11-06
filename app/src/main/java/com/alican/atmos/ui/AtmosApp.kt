@@ -233,7 +233,7 @@ private fun NavItem(
             Spacer(Modifier.height(3.dp))
             Text(
                 label,
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
                 color = if (active) Atmos.White else Atmos.Muted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

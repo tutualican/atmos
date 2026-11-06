@@ -140,6 +140,19 @@ internal object StringsDe {
         "Next 24 hours" to "Nächste 24 Stunden",
         "7-day forecast" to "7-Tage-Vorhersage",
         "Open forecast" to "Vorhersage öffnen",
+        "Full forecast" to "Ganze Vorhersage",
+        "Rain chance" to "Regenchance",
+        "Rain {}%" to "Regen {} %",
+        "Peak in next 12 h · {} expected" to "Höchste in den nächsten 12 Std. · {} erwartet",
+        "Peak in next 12 h · no amount expected" to "Höchste in den nächsten 12 Std. · keine Menge erwartet",
+        "Hourly detail, precipitation chart and uncertainty band" to
+            "Stündliche Details, Niederschlagsdiagramm und Unsicherheitsband",
+        "Larger text" to "Größere Schrift",
+        "Enlarges every label, icon caption and number for easier reading. Colours, data and layout stay exactly the same." to
+            "Vergrößert alle Beschriftungen, Symboltexte und Zahlen für besseres Lesen. Farben, Daten und Layout bleiben unverändert.",
+        "Percentage = chance of rain. Bars = forecast amount." to
+            "Prozent = Regenchance. Balken = vorhergesagte Menge.",
+        "Light → heavy rain" to "Leichter → starker Regen",
         "Numerical model data, not a station observation" to "Numerische Modelldaten, keine Stationsbeobachtung",
         "Data accuracy & sources" to "Datenqualität & Quellen",
         "ATMOS · sensory weather" to "ATMOS · Wetter zum Fühlen",

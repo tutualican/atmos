@@ -53,6 +53,20 @@ object Atmos {
         }
     }
 
+    /**
+     * Readable mode: enlarges every text style and the few hard-coded display sizes.
+     * It never changes the palette or hides data — only scale.
+     */
+    var largeText: Boolean by mutableStateOf(false)
+        private set
+
+    val textScale: Float
+        get() = if (largeText) 1.18f else 1f
+
+    fun applyReadable(enabled: Boolean) {
+        largeText = enabled
+    }
+
     val Gold = Color(0xFFE3BE7C)
     val GoldSoft = Color(0xFFC9A66B)
     val Storm = Color(0xFF8DAEF5)
@@ -199,9 +213,38 @@ private val AtmosScheme = darkColorScheme(
 fun AtmosTheme(content: @Composable () -> Unit) {
     // ATMOS is a deliberate dark experience in every system mode.
     isSystemInDarkTheme()
+    val typography = if (Atmos.largeText) rememberReadableTypography() else AtmosTypography
     MaterialTheme(
         colorScheme = AtmosScheme,
-        typography = AtmosTypography,
+        typography = typography,
         content = content
+    )
+}
+
+/** Every text style gets proportionally larger when readable mode is on. */
+@Composable
+private fun rememberReadableTypography(): Typography = androidx.compose.runtime.remember {
+    val f = Atmos.textScale
+    fun TextStyle.bigger() = copy(
+        fontSize = fontSize * f,
+        lineHeight = lineHeight * f,
+        letterSpacing = letterSpacing
+    )
+    Typography(
+        displayLarge = AtmosTypography.displayLarge.bigger(),
+        displayMedium = AtmosTypography.displayMedium.bigger(),
+        displaySmall = AtmosTypography.displaySmall.bigger(),
+        headlineLarge = AtmosTypography.headlineLarge.bigger(),
+        headlineMedium = AtmosTypography.headlineMedium.bigger(),
+        headlineSmall = AtmosTypography.headlineSmall.bigger(),
+        titleLarge = AtmosTypography.titleLarge.bigger(),
+        titleMedium = AtmosTypography.titleMedium.bigger(),
+        titleSmall = AtmosTypography.titleSmall.bigger(),
+        bodyLarge = AtmosTypography.bodyLarge.bigger(),
+        bodyMedium = AtmosTypography.bodyMedium.bigger(),
+        bodySmall = AtmosTypography.bodySmall.bigger(),
+        labelLarge = AtmosTypography.labelLarge.bigger(),
+        labelMedium = AtmosTypography.labelMedium.bigger(),
+        labelSmall = AtmosTypography.labelSmall.bigger()
     )
 }

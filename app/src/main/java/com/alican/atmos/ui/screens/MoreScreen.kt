@@ -130,6 +130,13 @@ fun MoreScreen(
             Spacer(Modifier.height(10.dp))
             AtmosCard(Modifier.fillMaxWidth()) {
                 ToggleRow(
+                    title = "Larger text",
+                    subtitle = "Enlarges every label, icon caption and number for easier reading. " +
+                        "Colours, data and layout stay exactly the same.",
+                    checked = s.largerText
+                ) { on -> onUpdateSettings { it.copy(largerText = on) } }
+                Hairline()
+                ToggleRow(
                     title = "System accent (Material You)",
                     subtitle = "Borrows only the accent colour from your wallpaper on Android 12+. " +
                         "The Midnight background, contrast and typography stay unchanged.",

@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import com.alican.atmos.i18n.Loc
 import com.alican.atmos.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -213,8 +214,8 @@ private fun TemperatureChartCard(data: WeatherData, hours: List<com.alican.atmos
                         "${Fmt.temp(hi - (range * g / 3.0), unit)}°",
                         2.dp.toPx(), y + 3.dp.toPx(),
                         gridPaint.apply {
-                            textSize = 9.sp.toPx()
-                            color = android.graphics.Color.argb(120, 166, 178, 196)
+                            textSize = (10 * Atmos.textScale).sp.toPx()
+                            color = android.graphics.Color.argb(150, 166, 178, 196)
                         }
                     )
                 }
@@ -259,8 +260,8 @@ private fun TemperatureChartCard(data: WeatherData, hours: List<com.alican.atmos
 
                 // Hour ticks.
                 val tickPaint = android.graphics.Paint().apply {
-                    textSize = 9.sp.toPx()
-                    color = android.graphics.Color.argb(130, 116, 129, 152)
+                    textSize = (10 * Atmos.textScale).sp.toPx()
+                    color = android.graphics.Color.argb(150, 166, 178, 196)
                     isAntiAlias = true
                 }
                 hours.indices.filter { it % 6 == 0 || it == hours.lastIndex }.forEach { i ->
@@ -325,8 +326,8 @@ private fun PrecipChartCard(data: WeatherData, hours: List<com.alican.atmos.core
                 }
                 drawPath(probLine, ActiveGold.copy(alpha = 0.9f), style = Stroke(width = 1.4.dp.toPx()))
                 val tickPaint = android.graphics.Paint().apply {
-                    textSize = 8.sp.toPx()
-                    color = android.graphics.Color.argb(110, 116, 129, 152)
+                    textSize = (10 * Atmos.textScale).sp.toPx()
+                    color = android.graphics.Color.argb(140, 116, 129, 152)
                     isAntiAlias = true
                 }
                 listOf(0, amounts.size / 2, amounts.lastIndex).forEach { i ->
@@ -396,14 +397,35 @@ private fun HourRow(hour: com.alican.atmos.core.HourPoint, data: WeatherData, se
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(52.dp)) {
-            Text("${Fmt.temp(hour.temperature, settings.temperatureUnit)}°", fontFamily = GeistMono, fontSize = 14.sp, color = Atmos.White, maxLines = 1)
-            Text("${Fmt.temp(hour.apparent, settings.temperatureUnit)}° feels", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted, maxLines = 1)
+        Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(54.dp)) {
+            Text(
+                "${Fmt.temp(hour.temperature, settings.temperatureUnit)}°",
+                fontFamily = GeistMono,
+                fontSize = (15 * Atmos.textScale).sp,
+                color = Atmos.White,
+                maxLines = 1
+            )
+            Text(
+                "${Fmt.temp(hour.apparent, settings.temperatureUnit)}° feels",
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted,
+                maxLines = 1
+            )
         }
         Spacer(Modifier.width(10.dp))
-        Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(62.dp)) {
-            Text("${Fmt.precip(hour.precipitation, settings.precipitationUnit)} ${settings.precipitationUnit.symbol}", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (hour.precipitation > 0.01) Atmos.Ice else Atmos.Muted, maxLines = 1)
-            Text("${hour.precipProbability ?: 0}% chance", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted, maxLines = 1)
+        Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(78.dp)) {
+            Text(
+                "${Fmt.precip(hour.precipitation, settings.precipitationUnit)} ${settings.precipitationUnit.symbol}",
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = if (hour.precipitation > 0.01) Atmos.Ice else Atmos.Muted,
+                maxLines = 1
+            )
+            Text(
+                Loc.t("Rain {}%", hour.precipProbability ?: 0),
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = if ((hour.precipProbability ?: 0) >= 20) Atmos.Ice else Atmos.Secondary,
+                maxLines = 1
+            )
         }
     }
 }
@@ -450,17 +472,17 @@ private fun DayCard(day: com.alican.atmos.core.DayPoint, data: WeatherData, sett
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(74.dp)) {
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(82.dp)) {
                 Text(
                     "${Fmt.precip(day.precipitationSum, settings.precipitationUnit)} ${settings.precipitationUnit.symbol}",
-                    fontFamily = GeistMono, fontSize = 12.sp,
+                    fontFamily = GeistMono, fontSize = (13 * Atmos.textScale).sp,
                     color = if (day.precipitationSum > 0.05) Atmos.Ice else Atmos.Muted,
                     maxLines = 1
                 )
                 Text(
-                    "${day.precipProbabilityMax ?: 0}% chance",
+                    Loc.t("Rain {}%", day.precipProbabilityMax ?: 0),
                     style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                    color = Atmos.Muted,
+                    color = if ((day.precipProbabilityMax ?: 0) >= 20) Atmos.Ice else Atmos.Secondary,
                     maxLines = 1
                 )
             }

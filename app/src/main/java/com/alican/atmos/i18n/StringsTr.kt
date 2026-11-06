@@ -140,6 +140,19 @@ internal object StringsTr {
         "Next 24 hours" to "Önümüzdeki 24 saat",
         "7-day forecast" to "7 günlük tahmin",
         "Open forecast" to "Tahmini aç",
+        "Full forecast" to "Tüm tahmin",
+        "Rain chance" to "Yağış olasılığı",
+        "Rain {}%" to "Yağış %{}",
+        "Peak in next 12 h · {} expected" to "Önümüzdeki 12 saatte en yüksek · {} bekleniyor",
+        "Peak in next 12 h · no amount expected" to "Önümüzdeki 12 saatte en yüksek · miktar beklenmiyor",
+        "Hourly detail, precipitation chart and uncertainty band" to
+            "Saatlik ayrıntı, yağış grafiği ve belirsizlik bandı",
+        "Larger text" to "Daha büyük yazı",
+        "Enlarges every label, icon caption and number for easier reading. Colours, data and layout stay exactly the same." to
+            "Tüm etiketleri, simge açıklamalarını ve sayıları daha kolay okunacak şekilde büyütür. Renkler, veriler ve yerleşim aynı kalır.",
+        "Percentage = chance of rain. Bars = forecast amount." to
+            "Yüzdeler yağış olasılığıdır. Çubuklar tahmini miktardır.",
+        "Light → heavy rain" to "Hafif → şiddetli yağış",
         "Numerical model data, not a station observation" to "Sayısal model verisi; istasyon gözlemi değil",
         "Data accuracy & sources" to "Veri doğruluğu ve kaynaklar",
         "ATMOS · sensory weather" to "ATMOS · duyusal hava durumu",

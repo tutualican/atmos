@@ -489,6 +489,12 @@ private fun PrecipDetail(state: AtmosUiState) {
     }
     AtmosCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(14.dp)) {
         Text("NEXT 2 HOURS · 15-MIN STEPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted)
+        Spacer(Modifier.height(3.dp))
+        Text(
+            "Percentage = chance of rain. Bars = forecast amount.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            color = Atmos.Secondary
+        )
         Spacer(Modifier.height(10.dp))
         PrecipBars(minutes.take(8).map { it.precipitation.toFloat() }, Modifier.fillMaxWidth().height(52.dp), color = Atmos.Ice)
         Spacer(Modifier.height(8.dp))
@@ -500,14 +506,14 @@ private fun PrecipDetail(state: AtmosUiState) {
                         style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
                         color = Atmos.Muted,
                         maxLines = 1,
-                        fontSize = 8.sp
+                        fontSize = (10 * Atmos.textScale).sp
                     )
                     Text(
                         "${m.probability ?: 0}%",
                         style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                        color = if ((m.probability ?: 0) > 40) Atmos.Ice else Atmos.Muted,
+                        color = if ((m.probability ?: 0) > 40) Atmos.Ice else Atmos.Secondary,
                         maxLines = 1,
-                        fontSize = 8.sp
+                        fontSize = (10 * Atmos.textScale).sp
                     )
                 }
             }

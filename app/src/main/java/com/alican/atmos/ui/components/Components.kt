@@ -89,9 +89,9 @@ fun SectionHeader(
     ) {
         Text(
             text = title.uppercase(),
-            style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
             color = Atmos.Muted,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
         )
@@ -100,18 +100,18 @@ fun SectionHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = if (onTrailingClick != null) {
-                    Modifier.clip(RoundedCornerShape(8.dp)).clickable { onTrailingClick() }.padding(4.dp)
-                } else Modifier.padding(4.dp)
+                    Modifier.clip(RoundedCornerShape(8.dp)).clickable { onTrailingClick() }.padding(6.dp)
+                } else Modifier.padding(6.dp)
             ) {
                 Text(
                     text = trailing,
-                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                    color = Atmos.Secondary,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color = Atmos.Ice,
                     maxLines = 1
                 )
                 if (trailingIcon != null) {
                     Spacer(Modifier.width(4.dp))
-                    Icon(trailingIcon, contentDescription = null, tint = Atmos.Secondary, modifier = Modifier.size(12.dp))
+                    Icon(trailingIcon, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -133,19 +133,19 @@ fun StatCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .size(30.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(11.dp))
                     .background(accent.copy(alpha = 0.10f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = title, tint = accent, modifier = Modifier.size(16.dp))
+                Icon(icon, contentDescription = title, tint = accent, modifier = Modifier.size(17.dp))
             }
             Spacer(Modifier.width(9.dp))
             Text(
-                title.uppercase(),
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                title,
+                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                 color = Atmos.Secondary,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
@@ -156,8 +156,8 @@ fun StatCard(
                 value,
                 fontFamily = GeistMono,
                 fontWeight = FontWeight.Light,
-                fontSize = 26.sp,
-                lineHeight = 30.sp,
+                fontSize = (26 * Atmos.textScale).sp,
+                lineHeight = (30 * Atmos.textScale).sp,
                 color = Atmos.White.copy(alpha = 0.94f),
                 maxLines = 1,
                 softWrap = false,
@@ -180,7 +180,7 @@ fun StatCard(
             caption,
             style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
             color = Atmos.Muted,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
     }
