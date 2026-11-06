@@ -49,6 +49,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alican.atmos.core.DayPoint
+import com.alican.atmos.core.AtmosSettings
+import com.alican.atmos.data.OfficialAlert
+import com.alican.atmos.notify.Nowcast
 import com.alican.atmos.core.WeatherData
 import com.alican.atmos.core.WeatherKind
 import com.alican.atmos.core.WeatherKindCodes
@@ -80,7 +83,8 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onLightning: () -> Unit,
     onOpenForecast: () -> Unit,
-    onOpenMap: () -> Unit
+    onOpenMap: () -> Unit,
+    onOpenAlert: (com.alican.atmos.data.OfficialAlert) -> Unit
 ) {
     val data = state.data
     val kind = data?.kind ?: WeatherKind.OVERCAST
@@ -134,6 +138,11 @@ fun HomeScreen(
             } else {
                 Hero(data, state.settings, onRefresh)
                 Spacer(Modifier.height(18.dp))
+                state.officialAlerts.firstOrNull()?.let { alert ->
+                    OfficialAlertBanner(alert, onOpenAlert)
+                    Spacer(Modifier.height(10.dp))
+                }
+                NowcastStrip(data, state.settings, onOpenDetail)
                 ForecastHazardBanner(data, onOpenDetail)
                 Spacer(Modifier.height(14.dp))
                 FocusGrid(state, data, onOpenDetail)
@@ -341,6 +350,112 @@ private fun HeroSkeleton(state: AtmosUiState, onRefresh: () -> Unit) {
                 background = Color.White.copy(alpha = 0.08f),
                 onClick = onRefresh
             )
+        }
+    }
+}
+
+@Composable
+private fun NowcastStrip(
+    data: WeatherData,
+    settings: AtmosSettings,
+    onOpenDetail: (DetailCard) -> Unit
+) {
+    val outlook = remember(data.fetchedAtMillis, data.minutely.size) { Nowcast.outlook(data) } ?: return
+    val starts = outlook.startsInMinutes
+    if (!outlook.rainingNow && (starts == null || starts > 120)) return
+    val title = when {
+        outlook.rainingNow && outlook.endsInMinutes != null ->
+            Loc.t("Rain easing in about {} min", outlook.endsInMinutes)
+        outlook.rainingNow -> Loc.tr("Rain is falling now")
+        starts == null -> return
+        starts <= 10 -> Loc.tr("Rain starting any minute")
+        else -> Loc.t("Rain likely in about {} min", starts)
+    }
+    val amount = "${Fmt.precip(outlook.amountNext60mm, settings.precipitationUnit)} ${settings.precipitationUnit.symbol}"
+    AtmosCard(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
+        onClick = { onOpenDetail(DetailCard.PRECIP) }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(32.dp).clip(RoundedCornerShape(11.dp))
+                    .background(Atmos.Ice.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(AtmosIcons.CloudRain, contentDescription = null, tint = Atmos.Ice, modifier = Modifier.size(17.dp))
+            }
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color = Atmos.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    Loc.t(
+                        "Next hour {} · {}% peak chance",
+                        amount,
+                        outlook.peakProbability
+                    ),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Atmos.Secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "NOWCAST",
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Ice
+            )
+        }
+    }
+}
+
+@Composable
+private fun OfficialAlertBanner(alert: OfficialAlert, onOpen: (OfficialAlert) -> Unit) {
+    AtmosCard(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
+        onClick = { onOpen(alert) }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(32.dp).clip(RoundedCornerShape(11.dp))
+                    .background(Atmos.Danger.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(AtmosIcons.Warning, contentDescription = null, tint = Atmos.Danger, modifier = Modifier.size(17.dp))
+            }
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "OFFICIAL · ${alert.source}",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Danger,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    alert.event,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color = Atmos.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    alert.headline,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Atmos.Secondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(AtmosIcons.ChevronRight, contentDescription = null, tint = Atmos.Muted, modifier = Modifier.size(16.dp))
         }
     }
 }

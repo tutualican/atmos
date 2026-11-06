@@ -46,7 +46,9 @@ object AtmosWidgets {
         listOf(
             AtmosNowWidget::class.java,
             AtmosForecastWidget::class.java,
-            AtmosDetailWidget::class.java
+            AtmosDetailWidget::class.java,
+            AtmosCompactWidget::class.java,
+            AtmosStripWidget::class.java
         ).forEach { cls ->
             val ids = manager.getAppWidgetIds(ComponentName(context, cls))
             if (ids.isNotEmpty()) {
@@ -54,6 +56,8 @@ object AtmosWidgets {
                     AtmosNowWidget::class.java -> renderNow(context, manager, ids, data, settings)
                     AtmosForecastWidget::class.java -> renderHourly(context, manager, ids, data, settings)
                     AtmosDetailWidget::class.java -> renderDetail(context, manager, ids, data, settings)
+                    AtmosCompactWidget::class.java -> renderCompact(context, manager, ids, data, settings)
+                    AtmosStripWidget::class.java -> renderStrip(context, manager, ids, data, settings)
                 }
             }
         }
@@ -104,6 +108,7 @@ object AtmosWidgets {
             )
         )
         views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
+        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }
@@ -157,6 +162,64 @@ object AtmosWidgets {
         views.setTextViewText(R.id.hum_title, Loc.tr("Humidity"))
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
+    }
+
+    fun renderCompact(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
+        val views = RemoteViews(context.packageName, R.layout.widget_compact)
+        val c = data.current
+        views.setTextViewText(R.id.widget_location, data.place.name)
+        views.setTextViewText(R.id.widget_updated, Fmt.relativeUpdate(data.fetchedAtMillis))
+        views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
+        views.setTextViewText(R.id.widget_unit, s.temperatureUnit.symbol)
+        views.setTextViewText(R.id.widget_condition, Loc.tr(com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay)))
+        val today = data.daily.firstOrNull()
+        views.setTextViewText(
+            R.id.widget_meta,
+            Loc.t(
+                "H {}°  L {}°  ·  {}%",
+                Fmt.temp(today?.tempMax ?: c.temperature, s.temperatureUnit),
+                Fmt.temp(today?.tempMin ?: c.temperature, s.temperatureUnit),
+                c.humidity
+            )
+        )
+        views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
+        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
+        views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
+        manager.updateAppWidget(ids, views)
+    }
+
+    fun renderStrip(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
+        val views = RemoteViews(context.packageName, R.layout.widget_strip)
+        val c = data.current
+        views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
+        views.setTextViewText(R.id.widget_unit, s.temperatureUnit.symbol)
+        views.setTextViewText(R.id.widget_condition, Loc.tr(com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay)))
+        views.setTextViewText(R.id.widget_location, data.place.name)
+        val outlook = com.alican.atmos.notify.Nowcast.outlook(data)
+        val rainText = when {
+            outlook?.rainingNow == true -> Loc.tr("raining")
+            outlook?.startsInMinutes != null && outlook.startsInMinutes <= 120 ->
+                Loc.t("in {} min", outlook.startsInMinutes)
+            else -> {
+                val prob = data.hourly.firstOrNull()?.precipProbability ?: 0
+                "$prob%"
+            }
+        }
+        views.setTextViewText(R.id.widget_rain, rainText)
+        views.setTextViewText(R.id.widget_updated, Fmt.relativeUpdate(data.fetchedAtMillis))
+        views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
+        views.setTextColor(R.id.widget_unit, accentArgb(context, s))
+        views.setTextColor(R.id.widget_rain, accentArgb(context, s))
+        views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
+        manager.updateAppWidget(ids, views)
+    }
+
+    private fun accentArgb(context: Context, settings: AtmosSettings): Int {
+        if (!settings.systemAccent || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+            return 0xFF9CC2E0.toInt()
+        }
+        return runCatching { context.getColor(android.R.color.system_accent1_200) }
+            .getOrDefault(0xFF9CC2E0.toInt())
     }
 
     private fun launchIntent(context: Context): PendingIntent {
@@ -214,7 +277,9 @@ object AtmosWidgets {
         return listOf(
             AtmosNowWidget::class.java,
             AtmosForecastWidget::class.java,
-            AtmosDetailWidget::class.java
+            AtmosDetailWidget::class.java,
+            AtmosCompactWidget::class.java,
+            AtmosStripWidget::class.java
         ).any { manager.getAppWidgetIds(ComponentName(context, it)).isNotEmpty() }
     }
 }
@@ -248,6 +313,8 @@ abstract class BaseWidgetProvider : AppWidgetProvider() {
 class AtmosNowWidget : BaseWidgetProvider()
 class AtmosForecastWidget : BaseWidgetProvider()
 class AtmosDetailWidget : BaseWidgetProvider()
+class AtmosCompactWidget : BaseWidgetProvider()
+class AtmosStripWidget : BaseWidgetProvider()
 
 class WidgetRefreshReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {

@@ -63,9 +63,9 @@ object RadarApi {
 }
 
 object Tiles {
-    private const val UA = "ATMOS/1.0 (Android; https://github.com/tutualican/atmos)"
+    private const val UA = "ATMOS/1.1 (Android; https://github.com/tutualican/atmos)"
 
-    private val cache = object : LruCache<String, Bitmap>(7 * 1024 * 1024) {
+    private val cache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
     }
 
@@ -93,10 +93,17 @@ object Tiles {
         }
     }
 
-    fun baseMapUrl(z: Int, x: Int, y: Int): String {
-        val sub = when ((x + y) % 4) { 0 -> "a"; 1 -> "b"; 2 -> "c"; else -> "d" }
-        return "https://$sub.basemaps.cartocdn.com/dark_all/$z/$x/$y.png"
-    }
+    /**
+     * Esri "World Dark Gray Canvas" is a keyless, publicly licensed dark basemap.
+     * The previous CARTO endpoint now answers with an "API KEY REQUIRED" watermark tile,
+     * so it is no longer usable without a signed account.
+     */
+    fun baseMapUrl(z: Int, x: Int, y: Int): String =
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/$z/$y/$x"
+
+    /** Separate label/road overlay so radar stays readable underneath place names. */
+    fun labelMapUrl(z: Int, x: Int, y: Int): String =
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/$z/$y/$x"
 
     fun radarUrl(host: String, path: String, z: Int, x: Int, y: Int): String =
         "$host$path/256/$z/$x/$y/4/1_1.png"

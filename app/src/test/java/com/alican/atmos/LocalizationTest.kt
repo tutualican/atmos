@@ -97,4 +97,22 @@ class LocalizationTest {
         // "Wind" is identical in German and English, so 15/16 is valid.
         assertEquals(true, counts.values.all { it >= 15 })
     }
+
+    @Test
+    fun nowcastAndOfficialAlertCopyIsLocalized() {
+        val keys = listOf(
+            "Rain nowcast alerts", "Rain is falling now",
+            "Official warning", "Issued by authority", "What to do", "Open official notice",
+            "Appearance", "System accent (Material You)", "Five widget families"
+        )
+        AppLanguage.entries.filter { it != AppLanguage.SYSTEM && it != AppLanguage.ENGLISH }.forEach { language ->
+            Loc.apply(language)
+            keys.forEach { key ->
+                assertEquals("$language is missing '$key'", false, Loc.tr(key) == key)
+            }
+        }
+        Loc.apply(AppLanguage.TURKISH)
+        assertEquals("Yaklaşık 20 dk içinde yağış olası", Loc.t("Rain likely in about {} min", 20))
+        assertEquals("Resmî uyarı", Loc.tr("Official warning"))
+    }
 }

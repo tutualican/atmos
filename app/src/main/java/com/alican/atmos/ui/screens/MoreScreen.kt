@@ -1,5 +1,6 @@
 package com.alican.atmos.ui.screens
 
+import android.Manifest
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -31,6 +32,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import com.alican.atmos.i18n.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -64,6 +67,8 @@ import com.alican.atmos.ui.theme.GeistMono
 import com.alican.atmos.widget.AtmosDetailWidget
 import com.alican.atmos.widget.AtmosForecastWidget
 import com.alican.atmos.widget.AtmosNowWidget
+import com.alican.atmos.widget.AtmosCompactWidget
+import com.alican.atmos.widget.AtmosStripWidget
 
 @Composable
 fun MoreScreen(
@@ -76,6 +81,14 @@ fun MoreScreen(
 ) {
     val context = LocalContext.current
     val s = state.settings
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -109,6 +122,19 @@ fun MoreScreen(
                         onUpdateSettings { it.copy(language = language) }
                     }
                 }
+            }
+
+            Spacer(Modifier.height(26.dp))
+            // ---------- Appearance ----------
+            SectionHeader("Appearance")
+            Spacer(Modifier.height(10.dp))
+            AtmosCard(Modifier.fillMaxWidth()) {
+                ToggleRow(
+                    title = "System accent (Material You)",
+                    subtitle = "Borrows only the accent colour from your wallpaper on Android 12+. " +
+                        "The Midnight background, contrast and typography stay unchanged.",
+                    checked = s.systemAccent
+                ) { on -> onUpdateSettings { it.copy(systemAccent = on) } }
             }
 
             Spacer(Modifier.height(26.dp))
@@ -176,7 +202,8 @@ fun MoreScreen(
                 }
                 Spacer(Modifier.height(7.dp))
                 Text(
-                    "ATMOS does not ingest official national warnings; the in-app hazard banner is a forecast signal. " +
+                    "ATMOS reads official CAP warnings wherever a public, keyless feed exists (currently the US National Weather Service). " +
+                        "Elsewhere no official machine-readable feed is available, so the hazard banner remains a forecast signal. " +
                         "For life-safety decisions always follow your national meteorological service.",
                     style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
                     color = Atmos.Muted.copy(alpha = 0.9f)
@@ -251,6 +278,29 @@ fun MoreScreen(
             }
 
             Spacer(Modifier.height(26.dp))
+            // ---------- Notifications ----------
+            SectionHeader("Notifications")
+            Spacer(Modifier.height(10.dp))
+            AtmosCard(Modifier.fillMaxWidth()) {
+                ToggleRow(
+                    title = "Rain nowcast alerts",
+                    subtitle = "A local notification when the 15-minute nowcast shows rain starting within about 45 minutes. " +
+                        "Derived from model data, never presented as an official warning.",
+                    checked = s.rainAlerts
+                ) { on ->
+                    if (on) requestNotificationPermission()
+                    onUpdateSettings { it.copy(rainAlerts = on) }
+                }
+                Hairline()
+                Text(
+                    "Checks run at most every 15 minutes and only while the setting is on. No marketing, no tracking, no background advertising. " +
+                        "Alerts stay silent when the nowcast is empty or ambiguous.",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted
+                )
+            }
+
+            Spacer(Modifier.height(26.dp))
             // ---------- Location ----------
             SectionHeader("Places", trailing = "Manage", trailingIcon = AtmosIcons.ChevronRight, onTrailingClick = onOpenLocation)
             Spacer(Modifier.height(10.dp))
@@ -309,7 +359,7 @@ fun MoreScreen(
                     }
                     Spacer(Modifier.width(10.dp))
                     Column {
-                        Text("Three widget families", style = androidx.compose.material3.MaterialTheme.typography.titleSmall, color = Atmos.White)
+                        Text("Five widget families", style = androidx.compose.material3.MaterialTheme.typography.titleSmall, color = Atmos.White)
                         Text("Pin any of them from here or from your launcher", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted)
                     }
                 }
@@ -328,6 +378,16 @@ fun MoreScreen(
                     title = "Air & exposure",
                     subtitle = "AQI, UV and wind at a glance",
                     onPin = { pinWidget(context, AtmosDetailWidget::class.java) }
+                )
+                WidgetRow(
+                    title = "Compact 2×2",
+                    subtitle = "Square tile with temperature, condition and range",
+                    onPin = { pinWidget(context, AtmosCompactWidget::class.java) }
+                )
+                WidgetRow(
+                    title = "Strip 4×1",
+                    subtitle = "One line: temperature, sky and rain chance",
+                    onPin = { pinWidget(context, AtmosStripWidget::class.java) }
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
@@ -359,7 +419,7 @@ fun MoreScreen(
                 SourceRow("Regional models", "DWD ICON · Météo-France AROME · NOAA GFS")
                 SourceRow("Air quality", "CAMS European forecast")
                 SourceRow("Radar", "RainViewer (observed + nowcast)")
-                SourceRow("Map", "OpenStreetMap data © CARTO")
+                SourceRow("Map", "Esri Dark Gray Canvas · © Esri, OpenStreetMap")
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Pill("GitHub", icon = AtmosIcons.External, tint = Atmos.Secondary, onClick = {

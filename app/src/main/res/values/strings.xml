@@ -4,4 +4,6 @@
     <string name="widget_now_desc">Current conditions and today\'s range</string>
     <string name="widget_hourly_desc">Next six hours with precipitation chance</string>
     <string name="widget_detail_desc">Air quality, UV, wind and humidity at a glance</string>
+    <string name="widget_compact_desc">Compact current conditions for a 2x2 slot</string>
+    <string name="widget_strip_desc">One-line temperature, condition and rain chance</string>
 </resources>

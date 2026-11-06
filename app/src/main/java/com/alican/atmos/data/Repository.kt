@@ -35,7 +35,9 @@ class AtmosStore(context: Context) {
                 reduceMotion = o.optBoolean("reduceMotion", false),
                 useLocation = o.optBoolean("useLocation", true),
                 refreshMinutes = o.optInt("refresh", 15),
-                language = enumOf(o.optString("language"), AppLanguage.SYSTEM)
+                language = enumOf(o.optString("language"), AppLanguage.SYSTEM),
+                rainAlerts = o.optBoolean("rainAlerts", false),
+                systemAccent = o.optBoolean("systemAccent", false)
             )
         }.getOrDefault(AtmosSettings())
         set(value) {
@@ -53,6 +55,8 @@ class AtmosStore(context: Context) {
                     put("useLocation", value.useLocation)
                     put("refresh", value.refreshMinutes)
                     put("language", value.language.name)
+                    put("rainAlerts", value.rainAlerts)
+                    put("systemAccent", value.systemAccent)
                 }.toString()
             ).apply()
         }

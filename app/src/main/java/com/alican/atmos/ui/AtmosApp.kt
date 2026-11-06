@@ -60,6 +60,7 @@ import com.alican.atmos.ui.screens.HomeScreen
 import com.alican.atmos.ui.screens.LocationSheet
 import com.alican.atmos.ui.screens.MapScreen
 import com.alican.atmos.ui.screens.MoreScreen
+import com.alican.atmos.ui.screens.OfficialAlertSheet
 import com.alican.atmos.ui.theme.Atmos
 import kotlinx.coroutines.launch
 
@@ -110,7 +111,8 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
                         onOpenSettings = { vm.setTab(AppTab.MORE) },
                         onLightning = { performLightningHaptic(context, state.settings) },
                         onOpenForecast = { vm.setTab(AppTab.FORECAST) },
-                        onOpenMap = { vm.setTab(AppTab.MAP) }
+                        onOpenMap = { vm.setTab(AppTab.MAP) },
+                        onOpenAlert = vm::openAlert
                     )
                     AppTab.MAP -> MapScreen(
                         state = state,
@@ -160,6 +162,10 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
 
     state.detail?.let { card ->
         DetailSheet(card = card, state = state, onDismiss = vm::closeDetail)
+    }
+
+    state.detailAlert?.let { alert ->
+        OfficialAlertSheet(alert = alert, onDismiss = vm::closeAlert)
     }
 }
 

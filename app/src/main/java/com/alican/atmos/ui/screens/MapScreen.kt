@@ -164,6 +164,18 @@ fun MapScreen(
                 }
             }.awaitAll()
         }
+        val labelKeys = remember(baseKeys) { baseKeys.map { "l|" + it.removePrefix("b|") } }
+        LaunchedEffect(labelKeys) {
+            labelKeys.map { key ->
+                async {
+                    if (tiles[key] == null) {
+                        val parts = key.split("|")
+                        val bmp = Tiles.load(key, Tiles.labelMapUrl(parts[1].toInt(), parts[2].toInt(), parts[3].toInt()))
+                        if (bmp != null) tiles[key] = bmp.asImageBitmap()
+                    }
+                }
+            }.awaitAll()
+        }
         LaunchedEffect(radarKeys, radar?.host) {
             val host = radar?.host ?: return@LaunchedEffect
             val path = frame?.path ?: return@LaunchedEffect
@@ -237,6 +249,20 @@ fun MapScreen(
                         blendMode = BlendMode.Screen
                     )
                 }
+            }
+
+            // Labels sit above the radar so place names stay readable during heavy echoes.
+            for (x in minTileX..maxTileX) for (y in minTileY..maxTileY) {
+                if (y !in 0..maxTileIndex) continue
+                val img = tiles["l|$tileZ|$x|$y"] ?: continue
+                val left = ((x * 256.0 - centerWorldX) * scale + widthPx / 2).toFloat()
+                val top = ((y * 256.0 - centerWorldY) * scale + heightPx / 2).toFloat()
+                drawImage(
+                    image = img,
+                    dstOffset = IntOffset(left.roundToInt(), top.roundToInt()),
+                    dstSize = IntSize(tileSize.roundToInt(), tileSize.roundToInt()),
+                    alpha = 0.92f
+                )
             }
 
             // Selected place marker.
@@ -384,7 +410,7 @@ fun MapScreen(
                         Text("light → heavy", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Atmos.Muted)
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "© OpenStreetMap · © CARTO · RainViewer",
+                            "© Esri, HERE, Garmin · © OpenStreetMap contributors · RainViewer",
                             style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
                             color = Atmos.Muted.copy(alpha = 0.75f),
                             maxLines = 1,

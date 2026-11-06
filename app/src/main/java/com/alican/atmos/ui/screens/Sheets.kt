@@ -1,5 +1,7 @@
 package com.alican.atmos.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import com.alican.atmos.i18n.Text
+import com.alican.atmos.i18n.Loc
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +52,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +63,7 @@ import com.alican.atmos.core.Place
 import com.alican.atmos.core.WeatherData
 import com.alican.atmos.core.WeatherKind
 import com.alican.atmos.core.WeatherKindCodes
+import com.alican.atmos.data.OfficialAlert
 import com.alican.atmos.ui.AtmosUiState
 import com.alican.atmos.ui.DetailCard
 import com.alican.atmos.ui.Fmt
@@ -785,6 +790,147 @@ private fun PlaceRow(place: Place, onClick: () -> Unit) {
             fontFamily = GeistMono,
             fontSize = 10.sp,
             color = Atmos.Muted.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OfficialAlertSheet(alert: OfficialAlert, onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Atmos.DeepNavy,
+        contentColor = Atmos.White,
+        scrimColor = Color.Black.copy(alpha = 0.55f),
+        dragHandle = {
+            Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.width(34.dp).height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.16f)))
+            }
+        }
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 620.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Atmos.Danger.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(AtmosIcons.Warning, contentDescription = null, tint = Atmos.Danger, modifier = Modifier.size(17.dp))
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        Loc.tr("Official warning").uppercase(),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                        color = Atmos.Danger
+                    )
+                    Text(
+                        "${alert.source} · ${Loc.tr(alert.severity)}",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Pill(Loc.tr("Issued by authority"), tint = Atmos.Danger)
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                alert.event,
+                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                color = Atmos.White
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                alert.headline,
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                color = Atmos.Secondary
+            )
+            Spacer(Modifier.height(16.dp))
+            Hairline()
+            Spacer(Modifier.height(14.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                AlertMeta(Loc.tr("Severity"), Loc.tr(alert.severity))
+                AlertMeta(Loc.tr("Urgency"), Loc.tr(alert.urgency))
+                if (alert.area.isNotBlank()) AlertMeta(Loc.tr("Area"), alert.area, Modifier.weight(1f))
+            }
+            if (alert.onset != null || alert.ends != null) {
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    if (alert.onset != null) AlertMeta(Loc.tr("From"), Fmt.clock(alert.onset))
+                    if (alert.ends != null) AlertMeta(Loc.tr("Until"), Fmt.clock(alert.ends))
+                }
+            }
+
+            if (alert.description.isNotBlank()) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    alert.description,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = Atmos.Secondary
+                )
+            }
+            if (!alert.instruction.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
+                AtmosCard(Modifier.fillMaxWidth()) {
+                    Text(
+                        Loc.tr("What to do").uppercase(),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = Atmos.Gold
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        alert.instruction,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = Atmos.White
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                Loc.t("Verbally unaltered official text from {}. ATMOS does not paraphrase warnings.", alert.sender),
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted
+            )
+            if (!alert.url.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
+                Pill(Loc.tr("Open official notice"), icon = AtmosIcons.External, tint = Atmos.Ice, onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(alert.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }
+                })
+            }
+            Spacer(Modifier.height(26.dp))
+        }
+    }
+}
+
+@Composable
+private fun AlertMeta(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            label.uppercase(),
+            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            color = Atmos.Muted
+        )
+        Spacer(Modifier.height(3.dp))
+        Text(
+            value,
+            style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+            color = Atmos.White,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

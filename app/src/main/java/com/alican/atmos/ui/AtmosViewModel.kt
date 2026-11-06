@@ -6,9 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.alican.atmos.core.AtmosSettings
 import com.alican.atmos.core.Place
 import com.alican.atmos.core.WeatherData
+import com.alican.atmos.data.OfficialAlert
+import com.alican.atmos.data.OfficialAlertsApi
 import com.alican.atmos.data.WeatherRepository
 import com.alican.atmos.i18n.Loc
 import com.alican.atmos.location.LocationHelper
+import com.alican.atmos.notify.RainAlerts
 import com.alican.atmos.widget.AtmosWidgets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,7 +45,10 @@ data class AtmosUiState(
     val searchError: String? = null,
     val locating: Boolean = false,
     val now: Long = System.currentTimeMillis(),
-    val toast: String? = null
+    val toast: String? = null,
+    val officialAlerts: List<OfficialAlert> = emptyList(),
+    val officialAlertsSupported: Boolean = false,
+    val detailAlert: OfficialAlert? = null
 )
 
 class AtmosViewModel(app: Application) : AndroidViewModel(app) {
@@ -76,6 +82,7 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         Loc.apply(store.settings.language)
+        runCatching { RainAlerts.schedule(context, store.settings) }
         restoreCache()
         viewModelScope.launch {
             val granted = LocationHelper.hasPermission(context)
@@ -146,6 +153,16 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 withContext(Dispatchers.IO) { AtmosWidgets.refreshAll(context) }
+                // Official CAP alerts are a separate, optional layer; a failure never blocks weather.
+                val supported = OfficialAlertsApi.isSupported(result.data.place)
+                _state.update { it.copy(officialAlertsSupported = supported) }
+                if (supported) {
+                    runCatching { OfficialAlertsApi.load(result.data.place) }
+                        .onSuccess { alerts -> _state.update { it.copy(officialAlerts = alerts) } }
+                } else {
+                    _state.update { it.copy(officialAlerts = emptyList()) }
+                }
+                runCatching { RainAlerts.evaluate(context, result.data, _state.value.settings) }
             } catch (t: Throwable) {
                 _state.update {
                     it.copy(
@@ -253,7 +270,22 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (next.refreshMinutes != before.refreshMinutes) startAutoRefresh()
         if (next.model != before.model) refresh(force = true)
+        if (next.rainAlerts != before.rainAlerts) {
+            RainAlerts.schedule(context, next)
+            if (next.rainAlerts) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _state.value.data?.let { RainAlerts.evaluate(context, it, next, force = true) }
+                }
+            }
+        }
+        if (next.systemAccent != before.systemAccent) {
+            com.alican.atmos.ui.theme.Atmos.applySystemAccent(context, next.systemAccent)
+            viewModelScope.launch(Dispatchers.IO) { AtmosWidgets.refreshAll(context) }
+        }
     }
+
+    fun openAlert(alert: OfficialAlert) = _state.update { it.copy(detailAlert = alert) }
+    fun closeAlert() = _state.update { it.copy(detailAlert = null) }
 
     fun setTab(tab: AppTab) = _state.update { it.copy(tab = tab) }
 

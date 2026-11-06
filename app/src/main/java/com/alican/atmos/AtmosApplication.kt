@@ -8,6 +8,10 @@ class AtmosApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         // Apply the stored interface language before any activity or widget renders.
-        runCatching { Loc.apply(AtmosStore(this).settings.language) }
+        runCatching {
+            val settings = AtmosStore(this).settings
+            Loc.apply(settings.language)
+            com.alican.atmos.ui.theme.Atmos.applySystemAccent(this, settings.systemAccent)
+        }
     }
 }

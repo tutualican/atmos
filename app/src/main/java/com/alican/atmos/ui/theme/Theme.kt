@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -29,8 +32,27 @@ object Atmos {
     val Secondary = Color(0xFFA6B2C4)
     val Muted = Color(0xFF748198)
 
-    val Ice = Color(0xFF9CC2E0)
-    val IceDim = Color(0xFF7FA6C6)
+    val IceBase = Color(0xFF9CC2E0)
+    val IceDimBase = Color(0xFF7FA6C6)
+
+    /**
+     * Optional Material You accent. Only the accent shifts; the Midnight palette stays
+     * untouched so the identity of the app does not dissolve into wallpaper colours.
+     */
+    var accentOverride: Color? by mutableStateOf(null)
+        private set
+
+    val Ice: Color get() = accentOverride ?: IceBase
+    val IceDim: Color get() = accentOverride?.copy(alpha = 0.82f) ?: IceDimBase
+
+    fun applySystemAccent(context: android.content.Context, enabled: Boolean) {
+        accentOverride = if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            runCatching { Color(context.getColor(android.R.color.system_accent1_200)) }.getOrNull()
+        } else {
+            null
+        }
+    }
+
     val Gold = Color(0xFFE3BE7C)
     val GoldSoft = Color(0xFFC9A66B)
     val Storm = Color(0xFF8DAEF5)
