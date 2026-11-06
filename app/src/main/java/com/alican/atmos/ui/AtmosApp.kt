@@ -32,7 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import com.alican.atmos.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alican.atmos.core.AtmosSettings
+import com.alican.atmos.i18n.Loc
 import com.alican.atmos.location.LocationHelper
 import com.alican.atmos.ui.components.AtmosIcons
 import com.alican.atmos.ui.screens.DetailSheet
@@ -92,7 +93,7 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
 
     LaunchedEffect(state.toast) {
         state.toast?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showSnackbar(Loc.tr(it))
             vm.toast(null)
         }
     }
@@ -151,7 +152,7 @@ fun AtmosApp(vm: AtmosViewModel = viewModel()) {
             onSearch = vm::onSearchQuery,
             onSelect = { place ->
                 vm.selectPlace(place)
-                scope.launch { snackbar.showSnackbar("Showing ${place.name}") }
+                scope.launch { snackbar.showSnackbar(Loc.t("Showing {}", place.name)) }
             },
             onUseLocation = { requestLocation() }
         )

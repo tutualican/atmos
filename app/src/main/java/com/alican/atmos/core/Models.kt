@@ -169,8 +169,24 @@ data class AtmosSettings(
     val lightningHaptics: Boolean = true,
     val reduceMotion: Boolean = false,
     val useLocation: Boolean = true,
-    val refreshMinutes: Int = 15
+    val refreshMinutes: Int = 15,
+    val language: AppLanguage = AppLanguage.SYSTEM
 )
+
+/** Languages shipped with this build. Adding a locale means adding a strings table. */
+enum class AppLanguage(val tag: String, val nativeName: String, val englishName: String) {
+    SYSTEM("system", "System default", "System default"),
+    ENGLISH("en", "English", "English"),
+    TURKISH("tr", "Türkçe", "Turkish"),
+    GERMAN("de", "Deutsch", "German"),
+    SPANISH("es", "Español", "Spanish"),
+    FRENCH("fr", "Français", "French");
+
+    companion object {
+        fun fromTag(tag: String): AppLanguage? =
+            entries.firstOrNull { it != SYSTEM && it.tag.equals(tag, ignoreCase = true) }
+    }
+}
 
 enum class TempUnit(val symbol: String) { CELSIUS("°C"), FAHRENHEIT("°F") }
 enum class WindUnit(val symbol: String) { KMH("km/h"), MS("m/s"), MPH("mph"), KNOTS("kn") }

@@ -8,6 +8,7 @@ import com.alican.atmos.core.PressureUnit
 import com.alican.atmos.core.TempUnit
 import com.alican.atmos.core.WeatherKind
 import com.alican.atmos.core.WindUnit
+import com.alican.atmos.i18n.Loc
 import com.alican.atmos.ui.components.AtmosIcons
 import com.alican.atmos.ui.theme.Atmos
 import java.time.LocalDateTime
@@ -77,19 +78,19 @@ object Fmt {
     }
 
     fun clock(t: LocalDateTime, is24h: Boolean = true): String =
-        t.format(if (is24h) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a", Locale.US))
+        t.format(if (is24h) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a", Loc.javaLocale))
 
     fun hour(t: LocalDateTime, is24h: Boolean = true): String =
         if (is24h) t.format(DateTimeFormatter.ofPattern("HH")) + ":00"
-        else t.format(DateTimeFormatter.ofPattern("h a", Locale.US))
+        else t.format(DateTimeFormatter.ofPattern("h a", Loc.javaLocale))
 
     fun hourShort(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("HH"))
 
-    fun weekday(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE", Locale.US))
+    fun weekday(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE", Loc.javaLocale))
 
-    fun dayMonth(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.US))
+    fun dayMonth(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE, d MMM", Loc.javaLocale))
 
-    fun dayNum(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("d", Locale.US))
+    fun dayNum(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("d", Loc.javaLocale))
 
     fun relativeUpdate(millis: Long): String {
         val minutes = ((System.currentTimeMillis() - millis) / 60_000L).coerceAtLeast(0)

@@ -7,6 +7,7 @@ import com.alican.atmos.core.AtmosSettings
 import com.alican.atmos.core.Place
 import com.alican.atmos.core.WeatherData
 import com.alican.atmos.data.WeatherRepository
+import com.alican.atmos.i18n.Loc
 import com.alican.atmos.location.LocationHelper
 import com.alican.atmos.widget.AtmosWidgets
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 enum class AppTab { HOME, MAP, FORECAST, MORE }
 
@@ -75,6 +75,7 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
     private var autoJob: Job? = null
 
     init {
+        Loc.apply(store.settings.language)
         restoreCache()
         viewModelScope.launch {
             val granted = LocationHelper.hasPermission(context)
@@ -221,7 +222,7 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(searching = true) }
             delay(320)
             try {
-                val lang = Locale.getDefault().language.ifBlank { "en" }
+                val lang = Loc.apiLanguage
                 val results = withContext(Dispatchers.IO) { repo.search(query, lang) }
                 _state.update { it.copy(searchResults = results, searching = false, searchError = null) }
             } catch (t: Throwable) {
@@ -246,6 +247,10 @@ class AtmosViewModel(app: Application) : AndroidViewModel(app) {
         val next = transform(before)
         store.settings = next
         _state.update { it.copy(settings = next) }
+        if (next.language != before.language) {
+            Loc.apply(next.language)
+            viewModelScope.launch(Dispatchers.IO) { AtmosWidgets.refreshAll(context) }
+        }
         if (next.refreshMinutes != before.refreshMinutes) startAutoRefresh()
         if (next.model != before.model) refresh(force = true)
     }

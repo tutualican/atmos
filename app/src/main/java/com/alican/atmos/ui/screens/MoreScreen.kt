@@ -30,7 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.alican.atmos.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alican.atmos.BuildConfig
 import com.alican.atmos.core.AnimationQuality
+import com.alican.atmos.core.AppLanguage
 import com.alican.atmos.core.AtmosSettings
 import com.alican.atmos.core.ForecastModel
 import com.alican.atmos.core.PrecipUnit
@@ -93,6 +94,24 @@ fun MoreScreen(
         }
 
         Column(Modifier.padding(horizontal = 20.dp)) {
+            // ---------- Language ----------
+            SectionHeader("Language")
+            Spacer(Modifier.height(10.dp))
+            AtmosCard(Modifier.fillMaxWidth()) {
+                Text(
+                    "Interface language. Data sources keep their original names.",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = Atmos.Muted
+                )
+                Spacer(Modifier.height(10.dp))
+                AppLanguage.entries.forEach { language ->
+                    LanguageRow(language, s.language == language) {
+                        onUpdateSettings { it.copy(language = language) }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(26.dp))
             // ---------- Accuracy / data ----------
             SectionHeader("Data & accuracy")
             Spacer(Modifier.height(10.dp))
@@ -358,6 +377,51 @@ fun MoreScreen(
                 )
             }
             Spacer(Modifier.height(30.dp))
+        }
+    }
+}
+
+@Composable
+private fun LanguageRow(language: AppLanguage, selected: Boolean, onClick: () -> Unit) {
+    val bg by animateColorAsState(if (selected) Atmos.Ice.copy(alpha = 0.07f) else Color.Transparent, tween(160), label = "langBg")
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(bg)
+            .clickable { onClick() }
+            .padding(vertical = 9.dp, horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(if (selected) Atmos.Ice else Color.Transparent)
+                .then(
+                    if (!selected) Modifier.background(Color.White.copy(alpha = 0.10f), CircleShape) else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (selected) Box(Modifier.size(5.dp).clip(CircleShape).background(Atmos.Midnight))
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            language.nativeName,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            color = if (selected) Atmos.White else Atmos.Secondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (language != AppLanguage.SYSTEM) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                language.englishName,
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color = Atmos.Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

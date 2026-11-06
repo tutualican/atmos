@@ -2,6 +2,7 @@ package com.alican.atmos.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.alican.atmos.core.AppLanguage
 import com.alican.atmos.core.AtmosSettings
 import com.alican.atmos.core.CachedBundle
 import com.alican.atmos.core.ForecastModel
@@ -33,7 +34,8 @@ class AtmosStore(context: Context) {
                 lightningHaptics = o.optBoolean("haptics", true),
                 reduceMotion = o.optBoolean("reduceMotion", false),
                 useLocation = o.optBoolean("useLocation", true),
-                refreshMinutes = o.optInt("refresh", 15)
+                refreshMinutes = o.optInt("refresh", 15),
+                language = enumOf(o.optString("language"), AppLanguage.SYSTEM)
             )
         }.getOrDefault(AtmosSettings())
         set(value) {
@@ -50,6 +52,7 @@ class AtmosStore(context: Context) {
                     put("reduceMotion", value.reduceMotion)
                     put("useLocation", value.useLocation)
                     put("refresh", value.refreshMinutes)
+                    put("language", value.language.name)
                 }.toString()
             ).apply()
         }

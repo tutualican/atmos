@@ -18,6 +18,7 @@ import com.alican.atmos.core.WeatherData
 import com.alican.atmos.core.WeatherKind
 import com.alican.atmos.data.AtmosStore
 import com.alican.atmos.data.OpenMeteo
+import com.alican.atmos.i18n.Loc
 import com.alican.atmos.ui.Fmt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,19 +82,26 @@ object AtmosWidgets {
         val views = RemoteViews(context.packageName, R.layout.widget_now)
         val c = data.current
         views.setTextViewText(R.id.widget_location, data.place.name)
-        views.setTextViewText(R.id.widget_updated, "Updated ${Fmt.relativeUpdate(data.fetchedAtMillis)}")
+        views.setTextViewText(R.id.widget_updated, Loc.t("Updated {}", Fmt.relativeUpdate(data.fetchedAtMillis)))
         views.setTextViewText(R.id.widget_temp, Fmt.temp(c.temperature, s.temperatureUnit))
         views.setTextViewText(R.id.widget_unit, s.temperatureUnit.symbol)
-        views.setTextViewText(R.id.widget_condition, com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay))
+        views.setTextViewText(R.id.widget_condition, Loc.tr(com.alican.atmos.core.WeatherKindCodes.label(c.weatherCode, c.isDay)))
         views.setTextViewText(
             R.id.widget_range,
-            "H ${Fmt.temp(data.daily.firstOrNull()?.tempMax ?: c.temperature, s.temperatureUnit)}°  " +
-                "L ${Fmt.temp(data.daily.firstOrNull()?.tempMin ?: c.temperature, s.temperatureUnit)}°"
+            Loc.t(
+                "H {}°  L {}°",
+                Fmt.temp(data.daily.firstOrNull()?.tempMax ?: c.temperature, s.temperatureUnit),
+                Fmt.temp(data.daily.firstOrNull()?.tempMin ?: c.temperature, s.temperatureUnit)
+            )
         )
         views.setTextViewText(
             R.id.widget_meta,
-            "Feels ${Fmt.temp(c.apparent, s.temperatureUnit)}°   ${c.humidity}%   " +
+            Loc.t(
+                "Feels {}°   {}%   {}",
+                Fmt.temp(c.apparent, s.temperatureUnit),
+                c.humidity,
                 "${Fmt.wind(c.windSpeed, s.windUnit)} ${s.windUnit.symbol}"
+            )
         )
         views.setImageViewResource(R.id.widget_icon, iconRes(WeatherKind.fromCode(c.weatherCode), c.isDay))
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
@@ -120,7 +128,7 @@ object AtmosWidgets {
         )
         hours.forEachIndexed { i, hour ->
             if (i > 5) return@forEachIndexed
-            views.setTextViewText(hourIds[i], if (i == 0) "Now" else Fmt.hourShort(hour.time) + ":00")
+            views.setTextViewText(hourIds[i], if (i == 0) Loc.tr("Now") else Fmt.hourShort(hour.time) + ":00")
             views.setImageViewResource(iconIds[i], iconRes(WeatherKind.fromCode(hour.weatherCode), hour.isDay))
             views.setTextViewText(tempIds[i], "${Fmt.temp(hour.temperature, s.temperatureUnit)}°")
             views.setTextViewText(probIds[i], "${hour.precipProbability ?: 0}%")
@@ -131,18 +139,22 @@ object AtmosWidgets {
 
     fun renderDetail(context: Context, manager: AppWidgetManager, ids: IntArray, data: WeatherData, s: AtmosSettings) {
         val views = RemoteViews(context.packageName, R.layout.widget_detail)
-        views.setTextViewText(R.id.widget_location, "${data.place.name} · exposure")
-        views.setTextViewText(R.id.widget_updated, "Updated ${Fmt.relativeUpdate(data.fetchedAtMillis)}")
+        views.setTextViewText(R.id.widget_location, Loc.t("{} · exposure", data.place.name))
+        views.setTextViewText(R.id.widget_updated, Loc.t("Updated {}", Fmt.relativeUpdate(data.fetchedAtMillis)))
         val aqi = data.air?.europeanAqi
         views.setTextViewText(R.id.air_value, aqi?.toString() ?: "—")
-        views.setTextViewText(R.id.air_label, aqi?.let { Fmt.aqiLabel(it) } ?: "unavailable")
+        views.setTextViewText(R.id.air_label, aqi?.let { Loc.tr(Fmt.aqiLabel(it)) } ?: Loc.tr("unavailable"))
         val uv = data.hourly.firstOrNull()?.uvIndex
         views.setTextViewText(R.id.uv_value, uv?.let { String.format(Locale.US, "%.1f", it) } ?: "—")
-        views.setTextViewText(R.id.uv_label, uv?.let { Fmt.uvLabel(it) } ?: "unavailable")
+        views.setTextViewText(R.id.uv_label, uv?.let { Loc.tr(Fmt.uvLabel(it)) } ?: Loc.tr("unavailable"))
         views.setTextViewText(R.id.wind_value, "${Fmt.wind(data.current.windSpeed, s.windUnit)}")
         views.setTextViewText(R.id.wind_label, "${s.windUnit.symbol} ${Fmt.compass(data.current.windDirection)}")
         views.setTextViewText(R.id.hum_value, "${data.current.humidity}%")
-        views.setTextViewText(R.id.hum_label, Fmt.humidityLabel(data.current.humidity))
+        views.setTextViewText(R.id.hum_label, Loc.tr(Fmt.humidityLabel(data.current.humidity)))
+        views.setTextViewText(R.id.air_title, Loc.tr("Air") + " · EAQI")
+        views.setTextViewText(R.id.uv_title, Loc.tr("UV index"))
+        views.setTextViewText(R.id.wind_title, Loc.tr("Wind"))
+        views.setTextViewText(R.id.hum_title, Loc.tr("Humidity"))
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
         manager.updateAppWidget(ids, views)
     }

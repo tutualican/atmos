@@ -57,6 +57,8 @@ successful app refresh. They never show data the app has not fetched.
 ### Settings
 - Forecast model: Best match, ECMWF IFS 0.25°, DWD ICON, NOAA GFS, Météo-France AROME.
 - Units: °C/°F, km/h · m/s · mph · kn, hPa/inHg, mm/in.
+- Interface language: System, English, Türkçe, Deutsch, Español, Français — applied instantly, without
+  restarting the app. Widgets, dates, AQI/UV scales and the geocoder follow the same choice.
 - Adaptive animation quality, reduce-motion mode, lightning haptics.
 - Device location opt-in, saved cities, data-source transparency.
 
@@ -129,6 +131,7 @@ location/    Permission-aware device location + reverse geocoding
 ui/scene/    Weather animation engine (Canvas, frame-budget adaptive)
 ui/screens/  Home, Forecast, Map, More, detail and location sheets
 ui/components/  Design system + hand-built Lucide-style icon set
+i18n/        Runtime string tables (EN source, TR/DE/ES/FR) + localized Text wrapper
 widget/      Three RemoteViews widget providers + shared renderer
 ```
 

@@ -31,7 +31,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.alican.atmos.i18n.Loc
+import com.alican.atmos.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -194,7 +195,7 @@ private fun Header(
             Spacer(Modifier.height(3.dp))
             Text(
                 buildString {
-                    append(if (state.fromCache) "Cached · " else "")
+                    if (state.fromCache) append(Loc.tr("Cached")).append(" · ")
                     append(Fmt.relativeUpdate(state.data?.fetchedAtMillis ?: System.currentTimeMillis()))
                     state.data?.let { append(" · ${it.modelLabel}") }
                 },
@@ -708,8 +709,15 @@ private fun DataFootnote(data: WeatherData, state: AtmosUiState, onOpenSettings:
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            "Source: Open-Meteo · ${data.modelLabel}${data.generationTimeMs?.let { " · ${String.format(java.util.Locale.US, "%.1f", it)} ms" } ?: ""} · " +
-                "Air quality: CAMS European ${data.air?.time?.let { "(obs. ${Fmt.clock(it)})" } ?: ""}".trim(),
+            buildString {
+                append(Loc.tr("Source: Open-Meteo"))
+                append(" · ${data.modelLabel}")
+                data.generationTimeMs?.let { append(" · ${String.format(java.util.Locale.US, "%.1f", it)} ms") }
+                append(" · ")
+                append(Loc.tr("Air quality: CAMS European"))
+                append(" ")
+                append(data.air?.time?.let { "(${Loc.tr("obs.")} ${Fmt.clock(it)})" } ?: "")
+            }.trim(),
             style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
             color = Atmos.Muted.copy(alpha = 0.8f),
             maxLines = 3,
